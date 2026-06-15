@@ -7,6 +7,7 @@ export interface PomodoroConfig {
   notificationEnabled: boolean;
   vibrationEnabled: boolean;
   soundEnabled: boolean;
+  debugQuickFocusEnabled: boolean;
 }
 
 export const defaultPomodoroConfig: PomodoroConfig = {
@@ -17,5 +18,6 @@ export const defaultPomodoroConfig: PomodoroConfig = {
   dailyGoalMinutes: 120,
   notificationEnabled: true,
   vibrationEnabled: true,
-  soundEnabled: true
+  soundEnabled: true,
+  debugQuickFocusEnabled: false
 };

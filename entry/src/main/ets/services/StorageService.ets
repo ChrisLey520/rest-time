@@ -83,7 +83,8 @@ function normalizeConfig(config: PomodoroConfig): PomodoroConfig {
     dailyGoalMinutes: config.dailyGoalMinutes ? config.dailyGoalMinutes : defaultPomodoroConfig.dailyGoalMinutes,
     notificationEnabled: config.notificationEnabled === false ? false : defaultPomodoroConfig.notificationEnabled,
     vibrationEnabled: config.vibrationEnabled === false ? false : defaultPomodoroConfig.vibrationEnabled,
-    soundEnabled: config.soundEnabled === false ? false : defaultPomodoroConfig.soundEnabled
+    soundEnabled: config.soundEnabled === false ? false : defaultPomodoroConfig.soundEnabled,
+    debugQuickFocusEnabled: config.debugQuickFocusEnabled === true
   };
 }
 

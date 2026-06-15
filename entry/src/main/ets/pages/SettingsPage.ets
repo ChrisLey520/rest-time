@@ -15,7 +15,8 @@ export struct SettingsPage {
     dailyGoalMinutes: 120,
     notificationEnabled: true,
     vibrationEnabled: true,
-    soundEnabled: true
+    soundEnabled: true,
+    debugQuickFocusEnabled: false
   };
 
   aboutToAppear(): void {
@@ -40,7 +41,8 @@ export struct SettingsPage {
     dailyGoalMinutes: number,
     notificationEnabled: boolean,
     vibrationEnabled: boolean,
-    soundEnabled: boolean
+    soundEnabled: boolean,
+    debugQuickFocusEnabled: boolean
   ): PomodoroConfig {
     return {
       focusMinutes,
@@ -50,7 +52,8 @@ export struct SettingsPage {
       dailyGoalMinutes,
       notificationEnabled,
       vibrationEnabled,
-      soundEnabled
+      soundEnabled,
+      debugQuickFocusEnabled
     };
   }
 
@@ -64,7 +67,8 @@ export struct SettingsPage {
       this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
-      this.config.soundEnabled
+      this.config.soundEnabled,
+      this.config.debugQuickFocusEnabled
     ));
   }
 
@@ -78,7 +82,8 @@ export struct SettingsPage {
       this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
-      this.config.soundEnabled
+      this.config.soundEnabled,
+      this.config.debugQuickFocusEnabled
     ));
   }
 
@@ -92,7 +97,8 @@ export struct SettingsPage {
       this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
-      this.config.soundEnabled
+      this.config.soundEnabled,
+      this.config.debugQuickFocusEnabled
     ));
   }
 
@@ -106,7 +112,8 @@ export struct SettingsPage {
       this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
-      this.config.soundEnabled
+      this.config.soundEnabled,
+      this.config.debugQuickFocusEnabled
     ));
   }
 
@@ -120,7 +127,8 @@ export struct SettingsPage {
       nextMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
-      this.config.soundEnabled
+      this.config.soundEnabled,
+      this.config.debugQuickFocusEnabled
     ));
   }
 
@@ -133,7 +141,8 @@ export struct SettingsPage {
       this.config.dailyGoalMinutes,
       isOn,
       this.config.vibrationEnabled,
-      this.config.soundEnabled
+      this.config.soundEnabled,
+      this.config.debugQuickFocusEnabled
     ));
 
     if (isOn) {
@@ -152,7 +161,8 @@ export struct SettingsPage {
       this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       isOn,
-      this.config.soundEnabled
+      this.config.soundEnabled,
+      this.config.debugQuickFocusEnabled
     ));
   }
 
@@ -165,6 +175,21 @@ export struct SettingsPage {
       this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
+      isOn,
+      this.config.debugQuickFocusEnabled
+    ));
+  }
+
+  private async toggleQuickFocusDebug(isOn: boolean): Promise<void> {
+    await this.saveConfig(this.createConfig(
+      this.config.focusMinutes,
+      this.config.shortBreakMinutes,
+      this.config.longBreakMinutes,
+      this.config.roundsBeforeLongBreak,
+      this.config.dailyGoalMinutes,
+      this.config.notificationEnabled,
+      this.config.vibrationEnabled,
+      this.config.soundEnabled,
       isOn
     ));
   }
@@ -449,6 +474,42 @@ export struct SettingsPage {
               .selectedColor('#5F9E8A')
               .onChange((isOn: boolean) => {
                 this.toggleSound(isOn);
+              });
+          }
+          .width('100%');
+        }
+        .width('100%')
+        .padding(18)
+        .backgroundColor('#FFFFFF')
+        .borderRadius(18)
+          .border({
+            width: 1,
+            color: '#DDE8EA'
+          });
+
+        Column({ space: 12 }) {
+          Text('开发调试')
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#1F2A2A')
+            .width('100%');
+
+          Row() {
+            Column({ space: 3 }) {
+              Text('显示 10 秒快速验证')
+                .fontSize(15)
+                .fontColor('#1F2A2A');
+              Text('仅用于真机调试计时结束流程')
+                .fontSize(12)
+                .fontColor('#7B8785');
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1);
+
+            Toggle({ type: ToggleType.Switch, isOn: this.config.debugQuickFocusEnabled })
+              .selectedColor('#5F9E8A')
+              .onChange((isOn: boolean) => {
+                this.toggleQuickFocusDebug(isOn);
               });
           }
           .width('100%');

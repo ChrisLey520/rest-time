@@ -3,8 +3,10 @@ import { SessionPreviewList } from '../components/SessionPreviewList';
 import { TimerDisplay } from '../components/TimerDisplay';
 import { FocusSession } from '../models/FocusSession';
 import { idleTimerState, TimerState } from '../models/TimerState';
+import { PomodoroConfig } from '../models/PomodoroConfig';
 import { Task } from '../models/Task';
 import { SessionService } from '../services/SessionService';
+import { StorageService } from '../services/StorageService';
 import { TaskService } from '../services/TaskService';
 import { TimerService } from '../services/TimerService';
 import { GoalStats, StatsService, TodayStats } from '../services/StatsService';
@@ -32,6 +34,17 @@ export struct FocusPage {
     remainingSeconds: 120 * 60,
     isCompleted: false
   };
+  @State config: PomodoroConfig = {
+    focusMinutes: 25,
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    roundsBeforeLongBreak: 4,
+    dailyGoalMinutes: 120,
+    notificationEnabled: true,
+    vibrationEnabled: true,
+    soundEnabled: true,
+    debugQuickFocusEnabled: false
+  };
   @State completedFocusRounds: number = 0;
   private ticker: number = -1;
   private widgetSnapshotKey: string = '';
@@ -50,6 +63,7 @@ export struct FocusPage {
     this.remainingSeconds = await TimerService.getRemainingSeconds();
     this.recentSessions = await SessionService.listRecent(3);
     this.activeTasks = await TaskService.listActive();
+    this.config = await StorageService.getConfig();
     this.todayStats = await StatsService.getTodayStats();
     this.goalStats = await StatsService.getGoalStats();
     this.completedFocusRounds = await PomodoroProgressService.getCompletedFocusRounds();
@@ -220,6 +234,10 @@ export struct FocusPage {
     return this.goalStats.isCompleted ? '#4D7EA8' : '#5F9E8A';
   }
 
+  private shouldShowQuickFocus(): boolean {
+    return this.config.debugQuickFocusEnabled;
+  }
+
   private async refreshWidgetIfChanged(): Promise<void> {
     const nextKey = `${this.timerState.mode}:${this.timerState.status}:${this.timerState.taskId ? this.timerState.taskId : ''}:${this.timerState.expectedEndAt ? this.timerState.expectedEndAt : 0}:${this.timerState.durationSeconds}:${this.todayStats.completedFocusCount}:${this.goalStats.progressPercent}`;
     if (this.widgetSnapshotKey !== nextKey) {
@@ -366,20 +384,22 @@ export struct FocusPage {
                 }
               });
 
-              Button('快速验证 10 秒')
-                .height(44)
-                .width('100%')
-                .fontSize(15)
-                .fontColor('#5F9E8A')
-                .backgroundColor('#FFFFFF')
-                .borderRadius(14)
-                .border({
-                  width: 1,
-                  color: '#DDE8EA'
-                })
-                .onClick(() => {
-                  this.onStartQuickTest();
-                });
+              if (this.shouldShowQuickFocus()) {
+                Button('快速验证 10 秒')
+                  .height(44)
+                  .width('100%')
+                  .fontSize(15)
+                  .fontColor('#5F9E8A')
+                  .backgroundColor('#FFFFFF')
+                  .borderRadius(14)
+                  .border({
+                    width: 1,
+                    color: '#DDE8EA'
+                  })
+                  .onClick(() => {
+                    this.onStartQuickTest();
+                  });
+              }
             }
             .width('100%');
           } else if (this.timerState.status === 'idle' && this.timerState.mode === 'break') {
