@@ -17,8 +17,73 @@ function cloneIdleState(): TimerState {
   };
 }
 
+export interface TimerStartResult {
+  didStart: boolean;
+  state: TimerState;
+  message: string;
+}
+
 export class TimerService {
+  static isFocusStartBlocked(state: TimerState): boolean {
+    return state.status === 'running' || state.status === 'paused' || state.mode === 'break';
+  }
+
+  static async canStartFocus(): Promise<boolean> {
+    const state = await TimerService.restore();
+    return !TimerService.isFocusStartBlocked(state);
+  }
+
+  static async tryStartFocus(durationSeconds?: number, taskId?: string, taskTitle?: string): Promise<TimerStartResult> {
+    const currentState = await TimerService.restore();
+    if (TimerService.isFocusStartBlocked(currentState)) {
+      const blockedResult: TimerStartResult = {
+        didStart: false,
+        state: currentState,
+        message: TimerService.focusStartBlockedMessage(currentState)
+      };
+      return blockedResult;
+    }
+
+    const state = await TimerService.createFocusTimer(durationSeconds, taskId, taskTitle);
+    const startedResult: TimerStartResult = {
+      didStart: true,
+      state,
+      message: ''
+    };
+    return startedResult;
+  }
+
   static async startFocus(durationSeconds?: number, taskId?: string, taskTitle?: string): Promise<TimerState> {
+    const result = await TimerService.tryStartFocus(durationSeconds, taskId, taskTitle);
+    return result.state;
+  }
+
+  static async tryStartBreak(durationSeconds?: number): Promise<TimerStartResult> {
+    const currentState = await TimerService.restore();
+    if (currentState.status !== 'idle') {
+      const blockedResult: TimerStartResult = {
+        didStart: false,
+        state: currentState,
+        message: currentState.mode === 'break' ? '歇息正在进行' : '专注正在进行'
+      };
+      return blockedResult;
+    }
+
+    const state = await TimerService.createBreakTimer(currentState, durationSeconds);
+    const startedResult: TimerStartResult = {
+      didStart: true,
+      state,
+      message: ''
+    };
+    return startedResult;
+  }
+
+  static async startBreak(durationSeconds?: number): Promise<TimerState> {
+    const result = await TimerService.tryStartBreak(durationSeconds);
+    return result.state;
+  }
+
+  private static async createFocusTimer(durationSeconds?: number, taskId?: string, taskTitle?: string): Promise<TimerState> {
     const config = await StorageService.getConfig();
     const plannedDurationSeconds = durationSeconds ? durationSeconds : config.focusMinutes * 60;
     const now = Date.now();
@@ -38,15 +103,20 @@ export class TimerService {
     return state;
   }
 
-  static async startBreak(durationSeconds?: number): Promise<TimerState> {
+  private static async createBreakTimer(currentState: TimerState, durationSeconds?: number): Promise<TimerState> {
     const config = await StorageService.getConfig();
-    const plannedDurationSeconds = durationSeconds ? durationSeconds : config.shortBreakMinutes * 60;
+    const plannedDurationSeconds = durationSeconds
+      ? durationSeconds
+      : currentState.mode === 'break' && currentState.durationSeconds > 0
+        ? currentState.durationSeconds
+        : config.shortBreakMinutes * 60;
+    const breakTitle = currentState.mode === 'break' && currentState.taskTitle ? currentState.taskTitle : '歇息';
     const now = Date.now();
     const state: TimerState = {
       id: createId('timer'),
       mode: 'break',
       status: 'running',
-      taskTitle: '歇息',
+      taskTitle: breakTitle,
       startedAt: now,
       expectedEndAt: now + plannedDurationSeconds * 1000,
       durationSeconds: plannedDurationSeconds,
@@ -55,6 +125,22 @@ export class TimerService {
 
     await StorageService.saveTimerState(state);
     return state;
+  }
+
+  private static focusStartBlockedMessage(state: TimerState): string {
+    if (state.mode === 'break' && state.status === 'idle') {
+      return '先处理当前歇息，再开始新的专注';
+    }
+
+    if (state.mode === 'break') {
+      return '歇息正在进行，已切到专注页';
+    }
+
+    if (state.status === 'paused') {
+      return '已有暂停中的专注，已切到专注页';
+    }
+
+    return '已有进行中的专注，已切到专注页';
   }
 
   static async pause(): Promise<TimerState> {

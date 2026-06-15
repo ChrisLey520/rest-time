@@ -32,17 +32,66 @@ function createTimerCore(storage, nowRef) {
   });
 
   return {
-    startFocus(durationSeconds = 60) {
+    isFocusStartBlocked() {
+      const state = storage.timerState;
+      return state.status === 'running' || state.status === 'paused' || state.mode === 'break';
+    },
+
+    tryStartFocus(durationSeconds = 60, taskId = 'task_1', taskTitle = '自由专注') {
+      if (this.isFocusStartBlocked()) {
+        return {
+          didStart: false,
+          state: storage.timerState,
+          message: 'blocked'
+        };
+      }
+
+      return {
+        didStart: true,
+        state: this.startFocus(durationSeconds, taskId, taskTitle),
+        message: ''
+      };
+    },
+
+    startFocus(durationSeconds = 60, taskId = 'task_1', taskTitle = '自由专注') {
+      if (this.isFocusStartBlocked()) {
+        return storage.timerState;
+      }
+
       const now = nowRef.now;
       storage.timerState = {
         id: `timer_${now}`,
         mode: 'focus',
         status: 'running',
-        taskId: 'task_1',
-        taskTitle: '自由专注',
+        taskId,
+        taskTitle,
         startedAt: now,
         expectedEndAt: now + durationSeconds * 1000,
         durationSeconds,
+        accumulatedPausedMs: 0
+      };
+      return storage.timerState;
+    },
+
+    startBreak(durationSeconds) {
+      const currentState = storage.timerState;
+      if (currentState.status !== 'idle') {
+        return currentState;
+      }
+
+      const plannedDurationSeconds = durationSeconds
+        ? durationSeconds
+        : currentState.mode === 'break' && currentState.durationSeconds > 0
+          ? currentState.durationSeconds
+          : storage.config.shortBreakMinutes * 60;
+      storage.timerState = {
+        id: `timer_${nowRef.now}`,
+        mode: 'break',
+        status: 'running',
+        taskTitle: currentState.mode === 'break' && currentState.taskTitle ? currentState.taskTitle : '歇息',
+        startedAt: nowRef.now,
+        expectedEndAt: nowRef.now + plannedDurationSeconds * 1000,
+        durationSeconds: plannedDurationSeconds,
         accumulatedPausedMs: 0
       };
       return storage.timerState;
@@ -192,6 +241,37 @@ function createTimerCore(storage, nowRef) {
     completedFocusCount: 0,
     status: 'active'
   });
+  storage.tasks.push({
+    id: 'task_2',
+    title: '写方案',
+    estimatedFocusCount: 1,
+    completedFocusCount: 0,
+    status: 'active'
+  });
+  const nowRef = { now: 2_000_000 };
+  const timer = createTimerCore(storage, nowRef);
+
+  const firstResult = timer.tryStartFocus(60, 'task_1', '自由专注');
+  nowRef.now += 5_000;
+  const secondResult = timer.tryStartFocus(120, 'task_2', '写方案');
+
+  assert.equal(firstResult.didStart, true);
+  assert.equal(secondResult.didStart, false);
+  assert.equal(storage.timerState.taskId, 'task_1');
+  assert.equal(storage.timerState.taskTitle, '自由专注');
+  assert.equal(storage.timerState.durationSeconds, 60);
+  assert.equal(timer.getRemainingSeconds(), 55);
+}
+
+{
+  const storage = createMemoryStorage();
+  storage.tasks.push({
+    id: 'task_1',
+    title: '自由专注',
+    estimatedFocusCount: 2,
+    completedFocusCount: 0,
+    status: 'active'
+  });
   const nowRef = { now: 5_000_000 };
   const timer = createTimerCore(storage, nowRef);
 
@@ -231,6 +311,11 @@ function createTimerCore(storage, nowRef) {
   assert.equal(storage.timerState.mode, 'break');
   assert.equal(storage.timerState.taskTitle, '长歇息');
   assert.equal(storage.timerState.durationSeconds, 900);
+
+  const breakState = timer.startBreak();
+  assert.equal(breakState.status, 'running');
+  assert.equal(breakState.taskTitle, '长歇息');
+  assert.equal(breakState.durationSeconds, 900);
 }
 
 console.log('timer core tests passed');

@@ -1,4 +1,5 @@
 import promptAction from '@ohos.promptAction';
+import { idleTimerState, TimerState } from '../models/TimerState';
 import { Task } from '../models/Task';
 import { AppStateService } from '../services/AppStateService';
 import { TaskService } from '../services/TaskService';
@@ -10,13 +11,39 @@ export struct TaskPage {
   @State showCreateForm: boolean = false;
   @State draftTitle: string = '';
   @State draftEstimate: number = 2;
+  @State timerState: TimerState = idleTimerState;
+  private ticker: number = -1;
 
   aboutToAppear(): void {
-    this.loadTasks();
+    this.refresh();
+    this.startTicker();
+  }
+
+  aboutToDisappear(): void {
+    this.stopTicker();
   }
 
   private async loadTasks(): Promise<void> {
     this.tasks = await TaskService.listAll();
+  }
+
+  private async refresh(): Promise<void> {
+    this.timerState = await TimerService.restore();
+    await this.loadTasks();
+  }
+
+  private startTicker(): void {
+    this.stopTicker();
+    this.ticker = setInterval(async () => {
+      this.timerState = await TimerService.restore();
+    }, 500);
+  }
+
+  private stopTicker(): void {
+    if (this.ticker !== -1) {
+      clearInterval(this.ticker);
+      this.ticker = -1;
+    }
   }
 
   private async addTask(): Promise<void> {
@@ -33,14 +60,21 @@ export struct TaskPage {
   }
 
   private async startTask(task: Task): Promise<void> {
-    await TimerService.startFocus(undefined, task.id, task.title);
+    if (this.isTaskInCurrentTimer(task)) {
+      AppStateService.setSelectedTabIndex(0);
+      promptAction.showToast({ message: '已切到当前专注' });
+      return;
+    }
+
+    const result = await TimerService.tryStartFocus(undefined, task.id, task.title);
+    this.timerState = result.state;
     AppStateService.setSelectedTabIndex(0);
-    promptAction.showToast({ message: '已开始专注' });
+    promptAction.showToast({ message: result.didStart ? '已开始专注' : result.message });
   }
 
   private async completeTask(task: Task): Promise<void> {
     await TaskService.markCompleted(task.id);
-    await this.loadTasks();
+    await this.refresh();
   }
 
   private async deleteTask(task: Task): Promise<void> {
@@ -61,12 +95,48 @@ export struct TaskPage {
 
     if (result.index === 1) {
       await TaskService.delete(task.id);
-      await this.loadTasks();
+      await this.refresh();
     }
   }
 
   private changeDraftEstimate(delta: number): void {
     this.draftEstimate = Math.min(12, Math.max(1, this.draftEstimate + delta));
+  }
+
+  private isFocusBlocked(): boolean {
+    return TimerService.isFocusStartBlocked(this.timerState);
+  }
+
+  private isTaskInCurrentTimer(task: Task): boolean {
+    return this.timerState.mode === 'focus' && this.timerState.status !== 'idle' && this.timerState.taskId === task.id;
+  }
+
+  private startButtonTitle(task: Task): string {
+    if (this.isTaskInCurrentTimer(task)) {
+      return '查看';
+    }
+
+    if (this.isFocusBlocked()) {
+      return '查看';
+    }
+
+    return '开始';
+  }
+
+  private startButtonColor(task: Task): string {
+    if (task.status !== 'active') {
+      return '#DDE8EA';
+    }
+
+    if (this.isTaskInCurrentTimer(task)) {
+      return '#4D7EA8';
+    }
+
+    if (this.isFocusBlocked()) {
+      return '#7B8785';
+    }
+
+    return '#5F9E8A';
   }
 
   build() {
@@ -91,6 +161,37 @@ export struct TaskPage {
             });
         }
         .width('100%');
+
+        if (this.isFocusBlocked()) {
+          Row() {
+            Column({ space: 4 }) {
+              Text(this.timerState.mode === 'break' ? '当前在歇息' : '当前在专注')
+                .fontSize(15)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#1F2A2A');
+              Text(this.timerState.taskTitle ? this.timerState.taskTitle : '自由专注')
+                .fontSize(13)
+                .fontColor('#7B8785');
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1);
+
+            Button('查看')
+              .height(36)
+              .width(76)
+              .fontSize(14)
+              .fontColor('#FFFFFF')
+              .backgroundColor('#5F9E8A')
+              .borderRadius(12)
+              .onClick(() => {
+                AppStateService.setSelectedTabIndex(0);
+              });
+          }
+          .width('100%')
+          .padding(14)
+          .backgroundColor('#EAF3F0')
+          .borderRadius(16);
+        }
 
         if (this.showCreateForm) {
           Column({ space: 14 }) {
@@ -209,12 +310,12 @@ export struct TaskPage {
               .width('100%');
 
               Row({ space: 10 }) {
-                Button('开始')
+                Button(this.startButtonTitle(task))
                   .height(40)
                   .layoutWeight(1)
                   .fontSize(14)
                   .fontColor('#FFFFFF')
-                  .backgroundColor(task.status === 'active' ? '#5F9E8A' : '#DDE8EA')
+                  .backgroundColor(this.startButtonColor(task))
                   .borderRadius(12)
                   .enabled(task.status === 'active')
                   .onClick(() => {

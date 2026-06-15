@@ -60,20 +60,35 @@ export struct FocusPage {
 
   private async onStart(): Promise<void> {
     const task = this.selectedTaskIndex >= 0 ? this.activeTasks[this.selectedTaskIndex] : undefined;
-    this.timerState = await TimerService.startFocus(undefined, task?.id, task?.title || '自由专注');
+    const result = await TimerService.tryStartFocus(undefined, task?.id, task?.title || '自由专注');
+    this.timerState = result.state;
+    if (!result.didStart) {
+      promptAction.showToast({ message: result.message });
+    }
+
     this.remainingSeconds = await TimerService.getRemainingSeconds();
     await this.restoreTimer();
   }
 
   private async onStartQuickTest(): Promise<void> {
     const task = this.selectedTaskIndex >= 0 ? this.activeTasks[this.selectedTaskIndex] : undefined;
-    this.timerState = await TimerService.startFocus(10, task?.id, task?.title || '自由专注');
+    const result = await TimerService.tryStartFocus(10, task?.id, task?.title || '自由专注');
+    this.timerState = result.state;
+    if (!result.didStart) {
+      promptAction.showToast({ message: result.message });
+    }
+
     this.remainingSeconds = await TimerService.getRemainingSeconds();
     await this.restoreTimer();
   }
 
   private async onStartBreak(): Promise<void> {
-    this.timerState = await TimerService.startBreak();
+    const result = await TimerService.tryStartBreak();
+    this.timerState = result.state;
+    if (!result.didStart) {
+      promptAction.showToast({ message: result.message });
+    }
+
     this.remainingSeconds = await TimerService.getRemainingSeconds();
     await this.restoreTimer();
   }
