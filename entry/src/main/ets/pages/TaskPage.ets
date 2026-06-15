@@ -107,7 +107,14 @@ export struct TaskPage {
   }
 
   private async completeTask(task: Task): Promise<void> {
-    await TaskService.markCompleted(task.id);
+    const nextTask = await TaskService.markCompleted(task.id);
+    if (!nextTask) {
+      AppStateService.setSelectedTabIndex(0);
+      PromptService.showToast('当前任务正在专注中');
+      await this.refresh();
+      return;
+    }
+
     await this.refresh();
     await WidgetService.refreshAllForms();
   }
@@ -137,7 +144,14 @@ export struct TaskPage {
     });
 
     if (result.index === 1) {
-      await TaskService.archive(task.id);
+      const nextTask = await TaskService.archive(task.id);
+      if (!nextTask) {
+        AppStateService.setSelectedTabIndex(0);
+        PromptService.showToast('当前任务正在专注中');
+        await this.refresh();
+        return;
+      }
+
       this.cancelEdit();
       await this.refresh();
       await WidgetService.refreshAllForms();
@@ -162,7 +176,14 @@ export struct TaskPage {
     });
 
     if (result.index === 1) {
-      await TaskService.delete(task.id);
+      const didDelete = await TaskService.delete(task.id);
+      if (!didDelete) {
+        AppStateService.setSelectedTabIndex(0);
+        PromptService.showToast('当前任务正在专注中');
+        await this.refresh();
+        return;
+      }
+
       this.cancelEdit();
       await this.refresh();
       await WidgetService.refreshAllForms();
@@ -176,7 +197,14 @@ export struct TaskPage {
       return;
     }
 
-    await TaskService.update(task.id, nextTitle, this.editEstimate);
+    const nextTask = await TaskService.update(task.id, nextTitle, this.editEstimate);
+    if (!nextTask) {
+      AppStateService.setSelectedTabIndex(0);
+      PromptService.showToast('当前任务正在专注中');
+      await this.refresh();
+      return;
+    }
+
     this.cancelEdit();
     await this.refresh();
     await WidgetService.refreshAllForms();
@@ -191,6 +219,12 @@ export struct TaskPage {
   }
 
   private startEdit(task: Task): void {
+    if (this.isTaskInCurrentTimer(task)) {
+      AppStateService.setSelectedTabIndex(0);
+      PromptService.showToast('当前任务正在专注中');
+      return;
+    }
+
     this.showCreateForm = false;
     this.editingTaskId = task.id;
     this.editTitle = task.title;
@@ -623,7 +657,21 @@ export struct TaskPage {
               }
               .width('100%');
 
-              if (this.isEditing(task)) {
+              if (this.isTaskInCurrentTimer(task)) {
+                Row({ space: 10 }) {
+                  Button('查看当前专注')
+                    .height(40)
+                    .layoutWeight(1)
+                    .fontSize(14)
+                    .fontColor('#FFFFFF')
+                    .backgroundColor('#4D7EA8')
+                    .borderRadius(12)
+                    .onClick(() => {
+                      AppStateService.setSelectedTabIndex(0);
+                    });
+                }
+                .width('100%');
+              } else if (this.isEditing(task)) {
                 Column({ space: 12 }) {
                   TextInput({ placeholder: '任务名称', text: this.editTitle })
                     .height(46)

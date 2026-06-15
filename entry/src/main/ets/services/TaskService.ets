@@ -1,8 +1,14 @@
 import { Task } from '../models/Task';
+import { TimerState } from '../models/TimerState';
 import { createId } from '../utils/id';
 import { StorageService } from './StorageService';
 
 export class TaskService {
+  private static async isTaskLockedByTimer(taskId: string): Promise<boolean> {
+    const state: TimerState = await StorageService.getTimerState();
+    return state.mode === 'focus' && state.status !== 'idle' && state.taskId === taskId;
+  }
+
   static async listAll(): Promise<Task[]> {
     return StorageService.getTasks();
   }
@@ -34,6 +40,10 @@ export class TaskService {
   }
 
   static async update(taskId: string, title: string, estimatedFocusCount: number): Promise<Task | null> {
+    if (await TaskService.isTaskLockedByTimer(taskId)) {
+      return null;
+    }
+
     const tasks = await StorageService.getTasks();
     const index = tasks.findIndex((task: Task) => task.id === taskId);
     if (index < 0) {
@@ -47,12 +57,21 @@ export class TaskService {
     return tasks[index];
   }
 
-  static async delete(taskId: string): Promise<void> {
+  static async delete(taskId: string): Promise<boolean> {
+    if (await TaskService.isTaskLockedByTimer(taskId)) {
+      return false;
+    }
+
     const tasks = await StorageService.getTasks();
     await StorageService.saveTasks(tasks.filter((task: Task) => task.id !== taskId));
+    return true;
   }
 
   static async markCompleted(taskId: string): Promise<Task | null> {
+    if (await TaskService.isTaskLockedByTimer(taskId)) {
+      return null;
+    }
+
     const tasks = await StorageService.getTasks();
     const task = tasks.find((item: Task) => item.id === taskId);
     if (!task) {
@@ -80,6 +99,10 @@ export class TaskService {
   }
 
   static async archive(taskId: string): Promise<Task | null> {
+    if (await TaskService.isTaskLockedByTimer(taskId)) {
+      return null;
+    }
+
     const tasks = await StorageService.getTasks();
     const task = tasks.find((item: Task) => item.id === taskId);
     if (!task) {
