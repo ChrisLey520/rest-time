@@ -6,6 +6,7 @@ import { StorageService } from './StorageService';
 import { TaskService } from './TaskService';
 import { NotificationService } from './NotificationService';
 import { PomodoroProgressService } from './PomodoroProgressService';
+import { ReminderService } from './ReminderService';
 
 function cloneIdleState(): TimerState {
   return {
@@ -100,6 +101,7 @@ export class TimerService {
     };
 
     await StorageService.saveTimerState(state);
+    await ReminderService.scheduleForTimer(state);
     return state;
   }
 
@@ -124,6 +126,7 @@ export class TimerService {
     };
 
     await StorageService.saveTimerState(state);
+    await ReminderService.scheduleForTimer(state);
     return state;
   }
 
@@ -152,6 +155,7 @@ export class TimerService {
     state.status = 'paused';
     state.pausedAt = Date.now();
     await StorageService.saveTimerState(state);
+    await ReminderService.cancelCurrent();
     return state;
   }
 
@@ -169,6 +173,7 @@ export class TimerService {
     state.pausedAt = undefined;
 
     await StorageService.saveTimerState(state);
+    await ReminderService.scheduleForTimer(state);
     return state;
   }
 
@@ -224,6 +229,7 @@ export class TimerService {
 
     await SessionService.add(session);
     await TaskService.incrementCompletedFocusCount(state.taskId);
+    await ReminderService.cancelCurrent();
     await NotificationService.notifyFocusCompleted(Math.round(state.durationSeconds / 60));
     const completedRounds = await PomodoroProgressService.incrementFocusRounds();
     await TimerService.prepareBreak(completedRounds);
@@ -231,6 +237,7 @@ export class TimerService {
   }
 
   static async completeBreak(): Promise<void> {
+    await ReminderService.cancelCurrent();
     await NotificationService.notifyBreakCompleted();
     await TimerService.clearTimer();
   }
@@ -279,6 +286,7 @@ export class TimerService {
   }
 
   static async clearTimer(): Promise<void> {
+    await ReminderService.cancelCurrent();
     await StorageService.clearTimerState();
   }
 

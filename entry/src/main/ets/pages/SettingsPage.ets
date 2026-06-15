@@ -1,6 +1,8 @@
 import promptAction from '@ohos.promptAction';
 import { PomodoroConfig } from '../models/PomodoroConfig';
+import { ReminderService } from '../services/ReminderService';
 import { StorageService } from '../services/StorageService';
+import { TimerService } from '../services/TimerService';
 import { WidgetService } from '../services/WidgetService';
 
 @Component
@@ -111,6 +113,12 @@ export struct SettingsPage {
       this.config.vibrationEnabled,
       this.config.soundEnabled
     ));
+
+    if (isOn) {
+      await ReminderService.syncWithTimer(await TimerService.restore());
+    } else {
+      await ReminderService.cancelCurrent();
+    }
   }
 
   private async toggleVibration(isOn: boolean): Promise<void> {
@@ -154,6 +162,7 @@ export struct SettingsPage {
     });
 
     if (result.index === 1) {
+      await ReminderService.cancelAll();
       await StorageService.clearAll();
       await this.loadConfig();
       await WidgetService.refreshAllForms();

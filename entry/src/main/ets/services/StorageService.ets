@@ -3,7 +3,7 @@ import common from '@ohos.app.ability.common';
 import { FocusSession } from '../models/FocusSession';
 import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig';
 import { Task } from '../models/Task';
-import { idleTimerState, TimerState } from '../models/TimerState';
+import { idleTimerState, TimerMode, TimerState } from '../models/TimerState';
 
 const PREFERENCES_NAME = 'qishi_preferences';
 
@@ -14,6 +14,7 @@ interface StorageKeys {
   tasks: string;
   progress: string;
   widgetFormIds: string;
+  scheduledReminder: string;
 }
 
 const STORAGE_KEYS: StorageKeys = {
@@ -22,7 +23,8 @@ const STORAGE_KEYS: StorageKeys = {
   sessions: 'qishi.sessions',
   tasks: 'qishi.tasks',
   progress: 'qishi.progress',
-  widgetFormIds: 'qishi.widgetFormIds'
+  widgetFormIds: 'qishi.widgetFormIds',
+  scheduledReminder: 'qishi.scheduledReminder'
 };
 
 export interface PomodoroProgress {
@@ -33,6 +35,13 @@ export interface WidgetFormIds {
   ids: string[];
 }
 
+export interface ScheduledReminderState {
+  reminderId: number;
+  timerId: string;
+  expectedEndAt: number;
+  mode: TimerMode;
+}
+
 const defaultPomodoroProgress: PomodoroProgress = {
   completedFocusRounds: 0
 };
@@ -41,9 +50,25 @@ const defaultWidgetFormIds: WidgetFormIds = {
   ids: []
 };
 
+const defaultScheduledReminderState: ScheduledReminderState = {
+  reminderId: -1,
+  timerId: '',
+  expectedEndAt: 0,
+  mode: 'focus'
+};
+
 function cloneWidgetFormIds(formIds: WidgetFormIds): WidgetFormIds {
   return {
     ids: formIds.ids.slice()
+  };
+}
+
+function cloneScheduledReminderState(state: ScheduledReminderState): ScheduledReminderState {
+  return {
+    reminderId: state.reminderId,
+    timerId: state.timerId,
+    expectedEndAt: state.expectedEndAt,
+    mode: state.mode
   };
 }
 
@@ -144,6 +169,25 @@ export class StorageService {
 
   static async saveWidgetFormIds(formIds: WidgetFormIds): Promise<void> {
     await StorageService.writeJson<WidgetFormIds>(STORAGE_KEYS.widgetFormIds, cloneWidgetFormIds(formIds));
+  }
+
+  static async getScheduledReminder(): Promise<ScheduledReminderState> {
+    const reminder = StorageService.readJson<ScheduledReminderState>(
+      STORAGE_KEYS.scheduledReminder,
+      defaultScheduledReminderState
+    );
+    return cloneScheduledReminderState(reminder);
+  }
+
+  static async saveScheduledReminder(reminder: ScheduledReminderState): Promise<void> {
+    await StorageService.writeJson<ScheduledReminderState>(
+      STORAGE_KEYS.scheduledReminder,
+      cloneScheduledReminderState(reminder)
+    );
+  }
+
+  static async clearScheduledReminder(): Promise<void> {
+    await StorageService.saveScheduledReminder(defaultScheduledReminderState);
   }
 
   static async clearAll(): Promise<void> {
