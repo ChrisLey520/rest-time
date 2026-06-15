@@ -3,6 +3,7 @@ export interface PomodoroConfig {
   shortBreakMinutes: number;
   longBreakMinutes: number;
   roundsBeforeLongBreak: number;
+  dailyGoalMinutes: number;
   notificationEnabled: boolean;
   vibrationEnabled: boolean;
   soundEnabled: boolean;
@@ -13,6 +14,7 @@ export const defaultPomodoroConfig: PomodoroConfig = {
   shortBreakMinutes: 5,
   longBreakMinutes: 15,
   roundsBeforeLongBreak: 4,
+  dailyGoalMinutes: 120,
   notificationEnabled: true,
   vibrationEnabled: true,
   soundEnabled: true

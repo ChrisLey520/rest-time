@@ -12,6 +12,7 @@ export struct SettingsPage {
     shortBreakMinutes: 5,
     longBreakMinutes: 15,
     roundsBeforeLongBreak: 4,
+    dailyGoalMinutes: 120,
     notificationEnabled: true,
     vibrationEnabled: true,
     soundEnabled: true
@@ -36,6 +37,7 @@ export struct SettingsPage {
     shortBreakMinutes: number,
     longBreakMinutes: number,
     roundsBeforeLongBreak: number,
+    dailyGoalMinutes: number,
     notificationEnabled: boolean,
     vibrationEnabled: boolean,
     soundEnabled: boolean
@@ -45,6 +47,7 @@ export struct SettingsPage {
       shortBreakMinutes,
       longBreakMinutes,
       roundsBeforeLongBreak,
+      dailyGoalMinutes,
       notificationEnabled,
       vibrationEnabled,
       soundEnabled
@@ -58,6 +61,7 @@ export struct SettingsPage {
       this.config.shortBreakMinutes,
       this.config.longBreakMinutes,
       this.config.roundsBeforeLongBreak,
+      this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       this.config.soundEnabled
@@ -71,6 +75,7 @@ export struct SettingsPage {
       nextMinutes,
       this.config.longBreakMinutes,
       this.config.roundsBeforeLongBreak,
+      this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       this.config.soundEnabled
@@ -84,6 +89,7 @@ export struct SettingsPage {
       this.config.shortBreakMinutes,
       nextMinutes,
       this.config.roundsBeforeLongBreak,
+      this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       this.config.soundEnabled
@@ -97,6 +103,21 @@ export struct SettingsPage {
       this.config.shortBreakMinutes,
       this.config.longBreakMinutes,
       nextRounds,
+      this.config.dailyGoalMinutes,
+      this.config.notificationEnabled,
+      this.config.vibrationEnabled,
+      this.config.soundEnabled
+    ));
+  }
+
+  private async changeDailyGoalMinutes(delta: number): Promise<void> {
+    const nextMinutes = Math.min(480, Math.max(15, this.config.dailyGoalMinutes + delta));
+    await this.saveConfig(this.createConfig(
+      this.config.focusMinutes,
+      this.config.shortBreakMinutes,
+      this.config.longBreakMinutes,
+      this.config.roundsBeforeLongBreak,
+      nextMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       this.config.soundEnabled
@@ -109,6 +130,7 @@ export struct SettingsPage {
       this.config.shortBreakMinutes,
       this.config.longBreakMinutes,
       this.config.roundsBeforeLongBreak,
+      this.config.dailyGoalMinutes,
       isOn,
       this.config.vibrationEnabled,
       this.config.soundEnabled
@@ -127,6 +149,7 @@ export struct SettingsPage {
       this.config.shortBreakMinutes,
       this.config.longBreakMinutes,
       this.config.roundsBeforeLongBreak,
+      this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       isOn,
       this.config.soundEnabled
@@ -139,6 +162,7 @@ export struct SettingsPage {
       this.config.shortBreakMinutes,
       this.config.longBreakMinutes,
       this.config.roundsBeforeLongBreak,
+      this.config.dailyGoalMinutes,
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       isOn
@@ -314,6 +338,39 @@ export struct SettingsPage {
               .borderRadius(18)
               .onClick(() => {
                 this.changeRoundsBeforeLongBreak(1);
+              });
+          }
+          .width('100%');
+
+          Row() {
+            Text('每日目标')
+              .fontSize(15)
+              .fontColor('#1F2A2A')
+              .layoutWeight(1);
+            Button('-')
+              .width(36)
+              .height(36)
+              .fontSize(20)
+              .fontColor('#1F2A2A')
+              .backgroundColor('#DDE8EA')
+              .borderRadius(18)
+              .onClick(() => {
+                this.changeDailyGoalMinutes(-15);
+              });
+            Text(`${this.config.dailyGoalMinutes} 分钟`)
+              .fontSize(15)
+              .fontColor('#1F2A2A')
+              .width(86)
+              .textAlign(TextAlign.Center);
+            Button('+')
+              .width(36)
+              .height(36)
+              .fontSize(20)
+              .fontColor('#FFFFFF')
+              .backgroundColor('#5F9E8A')
+              .borderRadius(18)
+              .onClick(() => {
+                this.changeDailyGoalMinutes(15);
               });
           }
           .width('100%');

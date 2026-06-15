@@ -8,9 +8,10 @@ import { Task } from '../models/Task';
 import { SessionService } from '../services/SessionService';
 import { TaskService } from '../services/TaskService';
 import { TimerService } from '../services/TimerService';
-import { StatsService, TodayStats } from '../services/StatsService';
+import { GoalStats, StatsService, TodayStats } from '../services/StatsService';
 import { PomodoroProgressService } from '../services/PomodoroProgressService';
 import { WidgetService } from '../services/WidgetService';
+import { formatDuration } from '../utils/dateTime';
 
 @Component
 export struct FocusPage {
@@ -23,6 +24,13 @@ export struct FocusPage {
     focusSeconds: 0,
     completedFocusCount: 0,
     completedTaskCount: 0
+  };
+  @State goalStats: GoalStats = {
+    goalMinutes: 120,
+    focusSeconds: 0,
+    progressPercent: 0,
+    remainingSeconds: 120 * 60,
+    isCompleted: false
   };
   @State completedFocusRounds: number = 0;
   private ticker: number = -1;
@@ -43,6 +51,7 @@ export struct FocusPage {
     this.recentSessions = await SessionService.listRecent(3);
     this.activeTasks = await TaskService.listActive();
     this.todayStats = await StatsService.getTodayStats();
+    this.goalStats = await StatsService.getGoalStats();
     this.completedFocusRounds = await PomodoroProgressService.getCompletedFocusRounds();
     await this.refreshWidgetIfChanged();
   }
@@ -195,8 +204,24 @@ export struct FocusPage {
     return `${minutes} 分 ${seconds} 秒`;
   }
 
+  private goalStatusText(): string {
+    if (this.goalStats.isCompleted) {
+      return '今日目标已完成';
+    }
+
+    return `还差 ${formatDuration(this.goalStats.remainingSeconds)}`;
+  }
+
+  private goalProgressWidth(): string {
+    return `${this.goalStats.progressPercent}%`;
+  }
+
+  private goalProgressColor(): string {
+    return this.goalStats.isCompleted ? '#4D7EA8' : '#5F9E8A';
+  }
+
   private async refreshWidgetIfChanged(): Promise<void> {
-    const nextKey = `${this.timerState.mode}:${this.timerState.status}:${this.timerState.taskId ? this.timerState.taskId : ''}:${this.timerState.expectedEndAt ? this.timerState.expectedEndAt : 0}:${this.timerState.durationSeconds}:${this.todayStats.completedFocusCount}`;
+    const nextKey = `${this.timerState.mode}:${this.timerState.status}:${this.timerState.taskId ? this.timerState.taskId : ''}:${this.timerState.expectedEndAt ? this.timerState.expectedEndAt : 0}:${this.timerState.durationSeconds}:${this.todayStats.completedFocusCount}:${this.goalStats.progressPercent}`;
     if (this.widgetSnapshotKey !== nextKey) {
       this.widgetSnapshotKey = nextKey;
       await WidgetService.refreshAllForms();
@@ -230,6 +255,63 @@ export struct FocusPage {
             .borderRadius(14);
         }
         .width('100%');
+
+        Column({ space: 10 }) {
+          Row() {
+            Column({ space: 3 }) {
+              Text('今日目标')
+                .fontSize(14)
+                .fontColor('#7B8785');
+              Text(`${Math.floor(this.todayStats.focusSeconds / 60)} / ${this.goalStats.goalMinutes} 分钟`)
+                .fontSize(20)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#1F2A2A');
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1);
+
+            Text(`${this.goalStats.progressPercent}%`)
+              .fontSize(18)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(this.goalProgressColor());
+          }
+          .width('100%');
+
+          Stack({ alignContent: Alignment.Start }) {
+            Row()
+              .width('100%')
+              .height(9)
+              .backgroundColor('#EEF3F2')
+              .borderRadius(5);
+
+            Row()
+              .width(this.goalProgressWidth())
+              .height(9)
+              .backgroundColor(this.goalProgressColor())
+              .borderRadius(5);
+          }
+          .width('100%')
+          .height(9);
+
+          Row() {
+            Text(this.goalStatusText())
+              .fontSize(13)
+              .fontColor('#7B8785')
+              .layoutWeight(1);
+            Text(`完成 ${this.todayStats.completedFocusCount} 次`)
+              .fontSize(13)
+              .fontColor('#7B8785');
+          }
+          .width('100%');
+        }
+        .width('100%')
+        .padding(16)
+        .backgroundColor('#FFFFFF')
+        .borderRadius(18)
+        .border({
+          width: 1,
+          color: '#DDE8EA'
+        });
 
         Column({ space: 20 }) {
           Text(this.selectedTaskTitle())

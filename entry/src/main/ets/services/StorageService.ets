@@ -72,6 +72,21 @@ function cloneScheduledReminderState(state: ScheduledReminderState): ScheduledRe
   };
 }
 
+function normalizeConfig(config: PomodoroConfig): PomodoroConfig {
+  return {
+    focusMinutes: config.focusMinutes ? config.focusMinutes : defaultPomodoroConfig.focusMinutes,
+    shortBreakMinutes: config.shortBreakMinutes ? config.shortBreakMinutes : defaultPomodoroConfig.shortBreakMinutes,
+    longBreakMinutes: config.longBreakMinutes ? config.longBreakMinutes : defaultPomodoroConfig.longBreakMinutes,
+    roundsBeforeLongBreak: config.roundsBeforeLongBreak
+      ? config.roundsBeforeLongBreak
+      : defaultPomodoroConfig.roundsBeforeLongBreak,
+    dailyGoalMinutes: config.dailyGoalMinutes ? config.dailyGoalMinutes : defaultPomodoroConfig.dailyGoalMinutes,
+    notificationEnabled: config.notificationEnabled === false ? false : defaultPomodoroConfig.notificationEnabled,
+    vibrationEnabled: config.vibrationEnabled === false ? false : defaultPomodoroConfig.vibrationEnabled,
+    soundEnabled: config.soundEnabled === false ? false : defaultPomodoroConfig.soundEnabled
+  };
+}
+
 export class StorageService {
   private static preferences?: dataPreferences.Preferences;
 
@@ -113,7 +128,7 @@ export class StorageService {
   }
 
   static async getConfig(): Promise<PomodoroConfig> {
-    return StorageService.readJson<PomodoroConfig>(STORAGE_KEYS.config, defaultPomodoroConfig);
+    return normalizeConfig(StorageService.readJson<PomodoroConfig>(STORAGE_KEYS.config, defaultPomodoroConfig));
   }
 
   static async saveConfig(config: PomodoroConfig): Promise<void> {

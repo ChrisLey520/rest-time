@@ -8,6 +8,8 @@ import { TimerService } from './TimerService';
 
 export interface WidgetSnapshot {
   todayFocusSeconds: number;
+  goalMinutes: number;
+  goalProgressPercent: number;
   currentTaskTitle: string;
   timerStatus: string;
   remainingSeconds: number;
@@ -21,6 +23,7 @@ export interface WidgetCardData {
   taskTitle: string;
   remainingText: string;
   todayText: string;
+  goalText: string;
   statusText: string;
   updatedAt: number;
 }
@@ -28,11 +31,14 @@ export interface WidgetCardData {
 export class WidgetService {
   static async getSnapshot(): Promise<WidgetSnapshot> {
     const stats = await StatsService.getTodayStats();
+    const goalStats = await StatsService.getGoalStats();
     const state: TimerState = await TimerService.restore();
     const remainingSeconds = await TimerService.getRemainingSeconds();
 
     return {
       todayFocusSeconds: stats.focusSeconds,
+      goalMinutes: goalStats.goalMinutes,
+      goalProgressPercent: goalStats.progressPercent,
       currentTaskTitle: state.taskTitle ? state.taskTitle : '自由专注',
       timerStatus: state.status,
       remainingSeconds,
@@ -48,6 +54,7 @@ export class WidgetService {
       taskTitle: '自由专注',
       remainingText: '--:--',
       todayText: '今日 0 分钟',
+      goalText: '目标 0%',
       statusText: '空闲',
       updatedAt: Date.now()
     };
@@ -84,7 +91,8 @@ export class WidgetService {
       detail,
       taskTitle: snapshot.currentTaskTitle,
       remainingText,
-      todayText: `今日 ${focusMinutes} 分钟`,
+      todayText: `今日 ${focusMinutes}/${snapshot.goalMinutes} 分钟`,
+      goalText: `目标 ${snapshot.goalProgressPercent}%`,
       statusText,
       updatedAt: snapshot.updatedAt
     };

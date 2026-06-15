@@ -1,6 +1,6 @@
 import { FocusSession } from '../models/FocusSession';
 import { SessionService } from '../services/SessionService';
-import { StatsService } from '../services/StatsService';
+import { DayStats, GoalStats, StatsService, WeeklyStats } from '../services/StatsService';
 import { formatClockTime, formatDuration } from '../utils/dateTime';
 
 type RecordFilter = 'all' | 'completed' | 'abandoned';
@@ -11,6 +11,21 @@ export struct RecordPage {
   @State todaySeconds: number = 0;
   @State completedFocusCount: number = 0;
   @State completedTaskCount: number = 0;
+  @State goalStats: GoalStats = {
+    goalMinutes: 120,
+    focusSeconds: 0,
+    progressPercent: 0,
+    remainingSeconds: 120 * 60,
+    isCompleted: false
+  };
+  @State weeklyStats: WeeklyStats = {
+    days: [],
+    totalFocusSeconds: 0,
+    totalCompletedFocusCount: 0,
+    bestDayLabel: '--',
+    bestDayFocusSeconds: 0,
+    activeDayCount: 0
+  };
   @State selectedFilter: RecordFilter = 'all';
   private ticker: number = -1;
 
@@ -40,11 +55,15 @@ export struct RecordPage {
   private async loadSessions(): Promise<void> {
     const sessions = await SessionService.listAll();
     const stats = await StatsService.getTodayStats();
+    const goalStats = await StatsService.getGoalStats();
+    const weeklyStats = await StatsService.getWeeklyStats();
 
     this.sessions = sessions;
     this.todaySeconds = stats.focusSeconds;
     this.completedFocusCount = stats.completedFocusCount;
     this.completedTaskCount = stats.completedTaskCount;
+    this.goalStats = goalStats;
+    this.weeklyStats = weeklyStats;
   }
 
   private filteredSessions(): FocusSession[] {
@@ -93,6 +112,38 @@ export struct RecordPage {
     return this.selectedFilter === filter ? '#FFFFFF' : '#1F2A2A';
   }
 
+  private goalProgressWidth(): string {
+    return `${this.goalStats.progressPercent}%`;
+  }
+
+  private goalStatusText(): string {
+    if (this.goalStats.isCompleted) {
+      return '今日目标已完成';
+    }
+
+    return `还差 ${formatDuration(this.goalStats.remainingSeconds)}`;
+  }
+
+  private weeklyAverageText(): string {
+    if (this.weeklyStats.activeDayCount === 0) {
+      return '--';
+    }
+
+    return formatDuration(Math.floor(this.weeklyStats.totalFocusSeconds / this.weeklyStats.activeDayCount));
+  }
+
+  private dayBarHeight(day: DayStats): number {
+    if (this.weeklyStats.bestDayFocusSeconds <= 0) {
+      return 8;
+    }
+
+    return Math.max(8, Math.floor(day.focusSeconds * 56 / this.weeklyStats.bestDayFocusSeconds));
+  }
+
+  private dayBarColor(day: DayStats): string {
+    return day.focusSeconds > 0 ? '#5F9E8A' : '#DDE8EA';
+  }
+
   build() {
     Scroll() {
       Column({ space: 18 }) {
@@ -112,6 +163,27 @@ export struct RecordPage {
             .fontColor('#1F2A2A');
           Text(`完成 ${this.completedFocusCount} 次专注 / ${this.completedTaskCount} 个任务`)
             .fontSize(13)
+            .fontColor('#7B8785');
+
+          Stack({ alignContent: Alignment.Start }) {
+            Row()
+              .width('100%')
+              .height(8)
+              .backgroundColor('#EEF3F2')
+              .borderRadius(4);
+
+            Row()
+              .width(this.goalProgressWidth())
+              .height(8)
+              .backgroundColor(this.goalStats.isCompleted ? '#4D7EA8' : '#5F9E8A')
+              .borderRadius(4);
+          }
+          .width('100%')
+          .height(8)
+          .padding({ top: 4 });
+
+          Text(`${this.goalStatusText()} / 目标 ${this.goalStats.goalMinutes} 分钟`)
+            .fontSize(12)
             .fontColor('#7B8785');
 
           Row({ space: 8 }) {
@@ -157,6 +229,98 @@ export struct RecordPage {
         .width('100%')
         .padding(18)
         .alignItems(HorizontalAlign.Start)
+        .backgroundColor('#FFFFFF')
+        .borderRadius(18)
+        .border({
+          width: 1,
+          color: '#DDE8EA'
+        });
+
+        Column({ space: 14 }) {
+          Row() {
+            Text('本周洞察')
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#1F2A2A')
+              .layoutWeight(1);
+            Text(`活跃 ${this.weeklyStats.activeDayCount}/7 天`)
+              .fontSize(12)
+              .fontColor('#7B8785');
+          }
+          .width('100%');
+
+          Row({ space: 8 }) {
+            Column({ space: 3 }) {
+              Text(formatDuration(this.weeklyStats.totalFocusSeconds))
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#1F2A2A');
+              Text('本周总计')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+
+            Column({ space: 3 }) {
+              Text(this.weeklyAverageText())
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#4D7EA8');
+              Text('活跃日均')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+
+            Column({ space: 3 }) {
+              Text(this.weeklyStats.bestDayLabel)
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#5F9E8A');
+              Text(`最佳 ${formatDuration(this.weeklyStats.bestDayFocusSeconds)}`)
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+          }
+          .width('100%');
+
+          Row({ space: 8 }) {
+            ForEach(this.weeklyStats.days, (day: DayStats) => {
+              Column({ space: 6 }) {
+                Stack({ alignContent: Alignment.Bottom }) {
+                  Row()
+                    .width('100%')
+                    .height(64)
+                    .backgroundColor('#F6F8F7')
+                    .borderRadius(8);
+
+                  Row()
+                    .width('100%')
+                    .height(this.dayBarHeight(day))
+                    .backgroundColor(this.dayBarColor(day))
+                    .borderRadius(8);
+                }
+                .width('100%')
+                .height(64);
+
+                Text(day.label)
+                  .fontSize(10)
+                  .fontColor('#7B8785')
+                  .maxLines(1)
+                  .textAlign(TextAlign.Center);
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Center);
+            }, (day: DayStats) => `${day.startAt}`);
+          }
+          .width('100%');
+        }
+        .width('100%')
+        .padding(18)
         .backgroundColor('#FFFFFF')
         .borderRadius(18)
         .border({

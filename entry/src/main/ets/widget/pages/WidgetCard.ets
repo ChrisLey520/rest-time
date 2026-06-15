@@ -7,6 +7,7 @@ struct WidgetCard {
   @LocalStorageProp('taskTitle') taskTitle: string = '自由专注';
   @LocalStorageProp('remainingText') remainingText: string = '--:--';
   @LocalStorageProp('todayText') todayText: string = '今日 0 分钟';
+  @LocalStorageProp('goalText') goalText: string = '目标 0%';
   @LocalStorageProp('statusText') statusText: string = '空闲';
 
   build() {
@@ -60,9 +61,15 @@ struct WidgetCard {
           .alignItems(HorizontalAlign.Start)
           .layoutWeight(1);
 
-          Text(this.todayText)
-            .fontSize(12)
-            .fontColor('#7B8785');
+          Column({ space: 4 }) {
+            Text(this.todayText)
+              .fontSize(12)
+              .fontColor('#7B8785');
+            Text(this.goalText)
+              .fontSize(12)
+              .fontColor('#5F9E8A');
+          }
+          .alignItems(HorizontalAlign.End);
         }
         .width('100%')
         .alignItems(VerticalAlign.Bottom);
