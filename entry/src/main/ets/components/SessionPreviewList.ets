@@ -32,6 +32,43 @@ export struct SessionPreviewList {
               Text(`${formatClockTime(session.startedAt)} - ${formatClockTime(session.endedAt)}`)
                 .fontSize(12)
                 .fontColor('#7B8785');
+              if (session.awaySeconds && session.awaySeconds > 0) {
+                Text(`离开 ${formatDuration(session.awaySeconds)} 未计入`)
+                  .fontSize(11)
+                  .fontColor('#C96F5D');
+              }
+              if (session.returnProofRequiredCount && session.returnProofRequiredCount > 0) {
+                Text(`守门整理 ${session.returnProofCompletedCount ? session.returnProofCompletedCount : 0}/${session.returnProofRequiredCount} 次`)
+                  .fontSize(11)
+                  .fontColor('#4D7EA8');
+              }
+              if (session.focusIntegrityStatus === 'violated') {
+                Text('守门违规：离开白名单')
+                  .fontSize(11)
+                  .fontColor('#C96F5D');
+              }
+              if (session.starterPlanRiskLevel && session.starterPlanRiskLevel !== 'low') {
+                Text(session.starterPlanRiskLevel === 'high' ? '高风险保底启动' : '易分心保底启动')
+                  .fontSize(11)
+                  .fontColor(session.starterPlanRiskLevel === 'high' ? '#C96F5D' : '#4D7EA8');
+              }
+              if (session.handoffNote && session.handoffNote.trim()) {
+                Text(`交接：${session.handoffNote}`)
+                  .fontSize(11)
+                  .fontColor('#4D7EA8')
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis });
+              }
+              if (session.microActionCompletedCount && session.microActionCompletedCount > 0) {
+                Text(`小动作 ${session.microActionCompletedCount} 次`)
+                  .fontSize(11)
+                  .fontColor('#5F9E8A');
+              }
+              if (session.timeCoinsEarned && session.timeCoinsEarned > 0) {
+                Text(`时光币 +${session.timeCoinsEarned}`)
+                  .fontSize(11)
+                  .fontColor('#4D7EA8');
+              }
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1);
@@ -43,6 +80,11 @@ export struct SessionPreviewList {
               Text(formatDuration(session.actualDurationSeconds))
                 .fontSize(12)
                 .fontColor('#7B8785');
+              if (session.restartFromReason === 'abandoned_retry') {
+                Text('低谷重启')
+                  .fontSize(11)
+                  .fontColor('#4D7EA8');
+              }
             }
             .alignItems(HorizontalAlign.End);
           }

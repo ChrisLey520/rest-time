@@ -12,7 +12,16 @@ const showHelp = args.includes('--help') || args.includes('-h');
 
 const checks = [
   ['node', ['test/timer_core.test.mjs']],
+  ['node', ['test/starter_core.test.mjs']],
   ['node', ['test/stats_core.test.mjs']],
+  ['node', ['test/record_stage_core.test.mjs']],
+  ['node', ['test/planning_core.test.mjs']],
+  ['node', ['test/plan_template_core.test.mjs']],
+  ['node', ['test/monthly_report_core.test.mjs']],
+  ['node', ['test/billing_core.test.mjs']],
+  ['node', ['test/time_coin_core.test.mjs']],
+  ['node', ['test/csv_export_core.test.mjs']],
+  ['node', ['test/project_suggest_core.test.mjs']],
   ['node', ['test/task_core.test.mjs']],
   ['node', ['--check', 'scripts/check-deveco-env.mjs']],
   ['git', ['diff', '--check']]

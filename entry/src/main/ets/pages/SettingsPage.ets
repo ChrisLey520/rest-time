@@ -1,4 +1,6 @@
+import { BillingSettings, BillingService, defaultBillingSettings } from '../services/BillingService';
 import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig';
+import { PRO_FEATURES, ProService } from '../services/ProService';
 import { PromptService } from '../services/PromptService';
 import { ReminderService } from '../services/ReminderService';
 import { StorageService } from '../services/StorageService';
@@ -16,8 +18,10 @@ export struct SettingsPage {
     notificationEnabled: true,
     vibrationEnabled: true,
     soundEnabled: true,
+    focusGuardEnabled: true,
     debugQuickFocusEnabled: false
   };
+  @State billingSettings: BillingSettings = defaultBillingSettings;
 
   aboutToAppear(): void {
     this.loadConfig();
@@ -25,6 +29,7 @@ export struct SettingsPage {
 
   private async loadConfig(): Promise<void> {
     this.config = await StorageService.getConfig();
+    this.billingSettings = await BillingService.getSettings();
   }
 
   private async saveConfig(config: PomodoroConfig): Promise<void> {
@@ -42,6 +47,7 @@ export struct SettingsPage {
     notificationEnabled: boolean,
     vibrationEnabled: boolean,
     soundEnabled: boolean,
+    focusGuardEnabled: boolean,
     debugQuickFocusEnabled: boolean
   ): PomodoroConfig {
     return {
@@ -53,8 +59,29 @@ export struct SettingsPage {
       notificationEnabled,
       vibrationEnabled,
       soundEnabled,
+      focusGuardEnabled: true,
       debugQuickFocusEnabled
     };
+  }
+
+  private createBillingSettings(
+    hourlyRate: number,
+    minimumBillableMinutes: number,
+    roundingMinutes: number
+  ): BillingSettings {
+    return {
+      hourlyRate,
+      minimumBillableMinutes,
+      roundingMinutes,
+      currencySymbol: this.billingSettings.currencySymbol,
+      invoiceNote: this.billingSettings.invoiceNote,
+      excludedProjects: this.billingSettings.excludedProjects
+    };
+  }
+
+  private async saveBillingSettings(settings: BillingSettings): Promise<void> {
+    this.billingSettings = settings;
+    await BillingService.saveSettings(settings);
   }
 
   private async changeFocusMinutes(delta: number): Promise<void> {
@@ -68,6 +95,7 @@ export struct SettingsPage {
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       this.config.soundEnabled,
+      this.config.focusGuardEnabled,
       this.config.debugQuickFocusEnabled
     ));
   }
@@ -83,6 +111,7 @@ export struct SettingsPage {
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       this.config.soundEnabled,
+      this.config.focusGuardEnabled,
       this.config.debugQuickFocusEnabled
     ));
   }
@@ -98,6 +127,7 @@ export struct SettingsPage {
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       this.config.soundEnabled,
+      this.config.focusGuardEnabled,
       this.config.debugQuickFocusEnabled
     ));
   }
@@ -113,6 +143,7 @@ export struct SettingsPage {
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       this.config.soundEnabled,
+      this.config.focusGuardEnabled,
       this.config.debugQuickFocusEnabled
     ));
   }
@@ -128,8 +159,47 @@ export struct SettingsPage {
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       this.config.soundEnabled,
+      this.config.focusGuardEnabled,
       this.config.debugQuickFocusEnabled
     ));
+  }
+
+  private async changeHourlyRate(delta: number): Promise<void> {
+    const nextRate = Math.min(9999, Math.max(0, this.billingSettings.hourlyRate + delta));
+    await this.saveBillingSettings(this.createBillingSettings(
+      nextRate,
+      this.billingSettings.minimumBillableMinutes,
+      this.billingSettings.roundingMinutes
+    ));
+  }
+
+  private async changeMinimumBillableMinutes(delta: number): Promise<void> {
+    const nextMinutes = Math.min(240, Math.max(1, this.billingSettings.minimumBillableMinutes + delta));
+    await this.saveBillingSettings(this.createBillingSettings(
+      this.billingSettings.hourlyRate,
+      nextMinutes,
+      this.billingSettings.roundingMinutes
+    ));
+  }
+
+  private async changeRoundingMinutes(delta: number): Promise<void> {
+    const nextMinutes = Math.min(120, Math.max(1, this.billingSettings.roundingMinutes + delta));
+    await this.saveBillingSettings(this.createBillingSettings(
+      this.billingSettings.hourlyRate,
+      this.billingSettings.minimumBillableMinutes,
+      nextMinutes
+    ));
+  }
+
+  private async updateInvoiceNote(note: string): Promise<void> {
+    await this.saveBillingSettings({
+      hourlyRate: this.billingSettings.hourlyRate,
+      minimumBillableMinutes: this.billingSettings.minimumBillableMinutes,
+      roundingMinutes: this.billingSettings.roundingMinutes,
+      currencySymbol: this.billingSettings.currencySymbol,
+      invoiceNote: note,
+      excludedProjects: this.billingSettings.excludedProjects
+    });
   }
 
   private async toggleNotification(isOn: boolean): Promise<void> {
@@ -142,6 +212,7 @@ export struct SettingsPage {
       isOn,
       this.config.vibrationEnabled,
       this.config.soundEnabled,
+      this.config.focusGuardEnabled,
       this.config.debugQuickFocusEnabled
     ));
 
@@ -162,6 +233,7 @@ export struct SettingsPage {
       this.config.notificationEnabled,
       isOn,
       this.config.soundEnabled,
+      this.config.focusGuardEnabled,
       this.config.debugQuickFocusEnabled
     ));
   }
@@ -176,6 +248,7 @@ export struct SettingsPage {
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       isOn,
+      this.config.focusGuardEnabled,
       this.config.debugQuickFocusEnabled
     ));
   }
@@ -190,6 +263,7 @@ export struct SettingsPage {
       this.config.notificationEnabled,
       this.config.vibrationEnabled,
       this.config.soundEnabled,
+      this.config.focusGuardEnabled,
       isOn
     ));
   }
@@ -217,6 +291,11 @@ export struct SettingsPage {
     }
   }
 
+  private async resetBilling(): Promise<void> {
+    await this.saveBillingSettings(defaultBillingSettings);
+    PromptService.showToast('账单设置已恢复默认');
+  }
+
   private async clearAll(): Promise<void> {
     const result = await PromptService.showDialog({
       title: '清除本地数据？',
@@ -242,6 +321,10 @@ export struct SettingsPage {
     }
   }
 
+  private showPremiumToast(): void {
+    PromptService.showToast('高级版能力将在商业化版本开放');
+  }
+
   build() {
     Scroll() {
       Column({ space: 18 }) {
@@ -250,6 +333,226 @@ export struct SettingsPage {
           .fontWeight(FontWeight.Bold)
           .fontColor('#1F2A2A')
           .width('100%');
+
+        Column({ space: 14 }) {
+          Row() {
+            Column({ space: 5 }) {
+              Text('栖时 Pro')
+                .fontSize(20)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#1F2A2A');
+              Text(ProService.isPro() ? '已订阅 · 全部能力已解锁' : '免费版 · 以下能力在稳定记录后解锁')
+                .fontSize(13)
+                .fontColor(ProService.isPro() ? '#5F9E8A' : '#7B8785');
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1);
+
+            Text(ProService.isPro() ? 'Pro' : '免费版')
+              .fontSize(12)
+              .fontColor(ProService.isPro() ? '#FFFFFF' : '#4D7EA8')
+              .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+              .backgroundColor(ProService.isPro() ? '#5F9E8A' : '#EAF2F8')
+              .borderRadius(11);
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center);
+
+          ForEach(PRO_FEATURES, (feature: { feature: string; title: string; description: string }) => {
+            Row({ space: 12 }) {
+              Text('✓')
+                .fontSize(14)
+                .fontColor('#5F9E8A');
+              Column({ space: 3 }) {
+                Text(feature.title)
+                  .fontSize(14)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor('#1F2A2A')
+                  .width('100%');
+                Text(feature.description)
+                  .fontSize(12)
+                  .fontColor('#7B8785')
+                  .width('100%');
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Top);
+          }, (feature: { feature: string }) => feature.feature);
+
+          if (!ProService.isPro()) {
+            Button('了解高级版')
+              .height(42)
+              .width('100%')
+              .fontSize(14)
+              .fontColor('#FFFFFF')
+              .backgroundColor('#4D7EA8')
+              .borderRadius(14)
+              .onClick(() => {
+                this.showPremiumToast();
+              });
+          }
+        }
+        .width('100%')
+        .padding(18)
+        .backgroundColor('#FFFFFF')
+        .borderRadius(18)
+        .border({
+          width: 1,
+          color: '#DDE8EA'
+        });
+
+        Column({ space: 16 }) {
+          Row() {
+            Text('客户账单')
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#1F2A2A')
+              .layoutWeight(1);
+
+            Button('默认')
+              .height(32)
+              .fontSize(12)
+              .fontColor('#4D7EA8')
+              .backgroundColor('#EAF2F8')
+              .borderRadius(11)
+              .onClick(() => {
+                this.resetBilling();
+              });
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center);
+
+          Row() {
+            Text('小时费率')
+              .fontSize(15)
+              .fontColor('#1F2A2A')
+              .layoutWeight(1);
+            Button('-')
+              .width(36)
+              .height(36)
+              .fontSize(20)
+              .fontColor('#1F2A2A')
+              .backgroundColor('#DDE8EA')
+              .borderRadius(18)
+              .onClick(() => {
+                this.changeHourlyRate(-20);
+              });
+            Text(`${this.billingSettings.currencySymbol}${this.billingSettings.hourlyRate}`)
+              .fontSize(15)
+              .fontColor('#1F2A2A')
+              .width(86)
+              .textAlign(TextAlign.Center);
+            Button('+')
+              .width(36)
+              .height(36)
+              .fontSize(20)
+              .fontColor('#FFFFFF')
+              .backgroundColor('#5F9E8A')
+              .borderRadius(18)
+              .onClick(() => {
+                this.changeHourlyRate(20);
+              });
+          }
+          .width('100%');
+
+          Row() {
+            Text('最小计费')
+              .fontSize(15)
+              .fontColor('#1F2A2A')
+              .layoutWeight(1);
+            Button('-')
+              .width(36)
+              .height(36)
+              .fontSize(20)
+              .fontColor('#1F2A2A')
+              .backgroundColor('#DDE8EA')
+              .borderRadius(18)
+              .onClick(() => {
+                this.changeMinimumBillableMinutes(-5);
+              });
+            Text(`${this.billingSettings.minimumBillableMinutes} 分钟`)
+              .fontSize(15)
+              .fontColor('#1F2A2A')
+              .width(86)
+              .textAlign(TextAlign.Center);
+            Button('+')
+              .width(36)
+              .height(36)
+              .fontSize(20)
+              .fontColor('#FFFFFF')
+              .backgroundColor('#5F9E8A')
+              .borderRadius(18)
+              .onClick(() => {
+                this.changeMinimumBillableMinutes(5);
+              });
+          }
+          .width('100%');
+
+          Row() {
+            Text('取整粒度')
+              .fontSize(15)
+              .fontColor('#1F2A2A')
+              .layoutWeight(1);
+            Button('-')
+              .width(36)
+              .height(36)
+              .fontSize(20)
+              .fontColor('#1F2A2A')
+              .backgroundColor('#DDE8EA')
+              .borderRadius(18)
+              .onClick(() => {
+                this.changeRoundingMinutes(-5);
+              });
+            Text(`${this.billingSettings.roundingMinutes} 分钟`)
+              .fontSize(15)
+              .fontColor('#1F2A2A')
+              .width(86)
+              .textAlign(TextAlign.Center);
+            Button('+')
+              .width(36)
+              .height(36)
+              .fontSize(20)
+              .fontColor('#FFFFFF')
+              .backgroundColor('#5F9E8A')
+              .borderRadius(18)
+              .onClick(() => {
+                this.changeRoundingMinutes(5);
+              });
+          }
+          .width('100%');
+
+          Column({ space: 8 }) {
+            Text('发票备注')
+              .fontSize(15)
+              .fontColor('#1F2A2A')
+              .width('100%');
+            TextInput({ placeholder: '例如：含 6 月项目开发工时', text: this.billingSettings.invoiceNote })
+              .height(42)
+              .fontSize(13)
+              .backgroundColor('#F6F8F7')
+              .borderRadius(12)
+              .maxLength(100)
+              .onChange((value: string) => {
+                this.updateInvoiceNote(value);
+              });
+            Text('备注会出现在账单卡片和导出的账单 CSV 中。')
+              .fontSize(11)
+              .fontColor('#7B8785')
+              .width('100%');
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start);
+        }
+        .width('100%')
+        .padding(18)
+        .backgroundColor('#FFFFFF')
+        .borderRadius(18)
+        .border({
+          width: 1,
+          color: '#DDE8EA'
+        });
 
         Column({ space: 16 }) {
           Text('专注节奏')
@@ -486,6 +789,44 @@ export struct SettingsPage {
             width: 1,
             color: '#DDE8EA'
           });
+
+        Column({ space: 12 }) {
+          Text('专注守门')
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#1F2A2A')
+            .width('100%');
+
+          Row() {
+            Column({ space: 3 }) {
+              Text('离开 App 不可结算')
+                .fontSize(15)
+                .fontColor('#1F2A2A');
+              Text('专注期间只允许栖时前台；切走或杀后台会写入违规记录')
+                .fontSize(12)
+                .fontColor('#7B8785');
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1);
+
+            Text('已开启')
+              .fontSize(13)
+              .fontColor('#FFFFFF')
+              .padding({ left: 10, right: 10, top: 6, bottom: 6 })
+              .backgroundColor('#5F9E8A')
+              .borderRadius(12);
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center);
+        }
+        .width('100%')
+        .padding(18)
+        .backgroundColor('#FFFFFF')
+        .borderRadius(18)
+        .border({
+          width: 1,
+          color: '#DDE8EA'
+        });
 
         Column({ space: 12 }) {
           Text('开发调试')

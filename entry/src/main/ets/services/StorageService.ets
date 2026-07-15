@@ -1,5 +1,6 @@
 import dataPreferences from '@ohos.data.preferences';
 import common from '@ohos.app.ability.common';
+import { BillingSettings, defaultBillingSettings } from '../models/BillingSettings';
 import { FocusSession } from '../models/FocusSession';
 import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig';
 import { Task } from '../models/Task';
@@ -12,6 +13,7 @@ interface StorageKeys {
   timerState: string;
   sessions: string;
   tasks: string;
+  billingSettings: string;
   progress: string;
   widgetFormIds: string;
   scheduledReminder: string;
@@ -22,6 +24,7 @@ const STORAGE_KEYS: StorageKeys = {
   timerState: 'qishi.timerState',
   sessions: 'qishi.sessions',
   tasks: 'qishi.tasks',
+  billingSettings: 'qishi.billingSettings',
   progress: 'qishi.progress',
   widgetFormIds: 'qishi.widgetFormIds',
   scheduledReminder: 'qishi.scheduledReminder'
@@ -84,7 +87,30 @@ function normalizeConfig(config: PomodoroConfig): PomodoroConfig {
     notificationEnabled: config.notificationEnabled === false ? false : defaultPomodoroConfig.notificationEnabled,
     vibrationEnabled: config.vibrationEnabled === false ? false : defaultPomodoroConfig.vibrationEnabled,
     soundEnabled: config.soundEnabled === false ? false : defaultPomodoroConfig.soundEnabled,
+    focusGuardEnabled: true,
     debugQuickFocusEnabled: config.debugQuickFocusEnabled === true
+  };
+}
+
+function normalizeBillingSettings(settings: BillingSettings): BillingSettings {
+  const trimmedCurrencySymbol = settings.currencySymbol ? settings.currencySymbol.trim() : '';
+  const trimmedInvoiceNote = settings.invoiceNote ? settings.invoiceNote.trim().slice(0, 100) : '';
+  const excludedProjects = Array.isArray(settings.excludedProjects)
+    ? settings.excludedProjects
+      .map((projectName: string) => projectName ? projectName.trim() : '')
+      .filter((projectName: string) => projectName.length > 0)
+    : [];
+  return {
+    hourlyRate: settings.hourlyRate > 0 ? Math.min(9999, Math.floor(settings.hourlyRate)) : 0,
+    minimumBillableMinutes: settings.minimumBillableMinutes > 0
+      ? Math.min(240, Math.floor(settings.minimumBillableMinutes))
+      : defaultBillingSettings.minimumBillableMinutes,
+    roundingMinutes: settings.roundingMinutes > 0
+      ? Math.min(120, Math.floor(settings.roundingMinutes))
+      : defaultBillingSettings.roundingMinutes,
+    currencySymbol: trimmedCurrencySymbol ? trimmedCurrencySymbol : defaultBillingSettings.currencySymbol,
+    invoiceNote: trimmedInvoiceNote,
+    excludedProjects
   };
 }
 
@@ -191,6 +217,20 @@ export class StorageService {
 
   static async saveTasks(tasks: Task[]): Promise<void> {
     await StorageService.writeJson<Task[]>(STORAGE_KEYS.tasks, tasks);
+  }
+
+  static async getBillingSettings(): Promise<BillingSettings> {
+    return normalizeBillingSettings(StorageService.readJson<BillingSettings>(
+      STORAGE_KEYS.billingSettings,
+      defaultBillingSettings
+    ));
+  }
+
+  static async saveBillingSettings(settings: BillingSettings): Promise<void> {
+    await StorageService.writeJson<BillingSettings>(
+      STORAGE_KEYS.billingSettings,
+      normalizeBillingSettings(settings)
+    );
   }
 
   static async getProgress(): Promise<PomodoroProgress> {

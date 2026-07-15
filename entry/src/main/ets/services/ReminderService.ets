@@ -24,9 +24,9 @@ function getReminderText(mode: TimerMode, taskTitle?: string): ReminderText {
 
   const title = taskTitle ? taskTitle : '自由专注';
   return {
-    title: '一段专注已完成',
-    content: `${title} 已完成，回来收束一下`,
-    expiredContent: '这段专注已经完成'
+    title: '回来确认这一段',
+    content: `${title} 到点了，回到栖时收束后才会计入完成`,
+    expiredContent: '这一段需要回到 App 确认'
   };
 }
 

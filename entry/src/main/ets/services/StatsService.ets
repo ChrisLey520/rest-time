@@ -3,15 +3,20 @@ import { StorageService } from './StorageService';
 import { TaskService } from './TaskService';
 import {
   createGoalStats,
+  createMonthlyStats,
+  createReviewStats,
   createTodayStats,
   createWeeklyStats,
   DayStats,
   GoalStats,
+  MonthlyStats,
+  ProjectFocusStats,
+  ReviewStats,
   TodayStats,
   WeeklyStats
 } from '../utils/statsCore';
 
-export { DayStats, GoalStats, TodayStats, WeeklyStats };
+export { DayStats, GoalStats, MonthlyStats, ProjectFocusStats, ReviewStats, TodayStats, WeeklyStats };
 
 export class StatsService {
   static async getTodayStats(): Promise<TodayStats> {
@@ -29,5 +34,15 @@ export class StatsService {
   static async getWeeklyStats(): Promise<WeeklyStats> {
     const sessions = await SessionService.listAll();
     return createWeeklyStats(sessions, Date.now());
+  }
+
+  static async getReviewStats(): Promise<ReviewStats> {
+    const sessions = await SessionService.listAll();
+    return createReviewStats(sessions, Date.now());
+  }
+
+  static async getMonthlyStats(monthOffset: number = 0): Promise<MonthlyStats> {
+    const sessions = await SessionService.listAll();
+    return createMonthlyStats(sessions, Date.now(), monthOffset);
   }
 }

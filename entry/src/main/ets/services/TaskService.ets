@@ -1,9 +1,30 @@
-import { Task } from '../models/Task';
+import { Task, TaskPlannedFor, TaskPriority } from '../models/Task';
 import { TimerState } from '../models/TimerState';
 import { createId } from '../utils/id';
 import { StorageService } from './StorageService';
 
 export class TaskService {
+  private static normalizePriority(priority?: TaskPriority): TaskPriority {
+    if (priority === 'low' || priority === 'high') {
+      return priority;
+    }
+
+    return 'normal';
+  }
+
+  private static normalizePlannedFor(plannedFor?: TaskPlannedFor): TaskPlannedFor {
+    if (plannedFor === 'today' || plannedFor === 'tomorrow' || plannedFor === 'later') {
+      return plannedFor;
+    }
+
+    return 'none';
+  }
+
+  private static normalizeProjectName(projectName?: string): string | undefined {
+    const trimmedProjectName = projectName ? projectName.trim() : '';
+    return trimmedProjectName ? trimmedProjectName : undefined;
+  }
+
   private static async isTaskLockedByTimer(taskId: string): Promise<boolean> {
     const state: TimerState = await StorageService.getTimerState();
     return state.mode === 'focus' && state.status !== 'idle' && state.taskId === taskId;
@@ -18,7 +39,13 @@ export class TaskService {
     return tasks.filter((task: Task) => task.status === 'active');
   }
 
-  static async add(title: string, estimatedFocusCount: number = 1): Promise<Task | null> {
+  static async add(
+    title: string,
+    estimatedFocusCount: number = 1,
+    priority: TaskPriority = 'normal',
+    plannedFor: TaskPlannedFor = 'none',
+    projectName?: string
+  ): Promise<Task | null> {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
       return null;
@@ -30,6 +57,9 @@ export class TaskService {
       estimatedFocusCount: Math.max(1, estimatedFocusCount),
       completedFocusCount: 0,
       status: 'active',
+      priority: TaskService.normalizePriority(priority),
+      plannedFor: TaskService.normalizePlannedFor(plannedFor),
+      projectName: TaskService.normalizeProjectName(projectName),
       createdAt: Date.now()
     };
     const tasks = await StorageService.getTasks();
@@ -39,7 +69,14 @@ export class TaskService {
     return task;
   }
 
-  static async update(taskId: string, title: string, estimatedFocusCount: number): Promise<Task | null> {
+  static async update(
+    taskId: string,
+    title: string,
+    estimatedFocusCount: number,
+    priority: TaskPriority = 'normal',
+    plannedFor: TaskPlannedFor = 'none',
+    projectName?: string
+  ): Promise<Task | null> {
     if (await TaskService.isTaskLockedByTimer(taskId)) {
       return null;
     }
@@ -52,9 +89,34 @@ export class TaskService {
 
     tasks[index].title = title.trim() || tasks[index].title;
     tasks[index].estimatedFocusCount = Math.max(1, estimatedFocusCount);
+    tasks[index].priority = TaskService.normalizePriority(priority);
+    tasks[index].plannedFor = TaskService.normalizePlannedFor(plannedFor);
+    tasks[index].projectName = TaskService.normalizeProjectName(projectName);
     await StorageService.saveTasks(tasks);
 
     return tasks[index];
+  }
+
+  static async updatePlanning(
+    taskId: string,
+    priority: TaskPriority,
+    plannedFor: TaskPlannedFor
+  ): Promise<Task | null> {
+    if (await TaskService.isTaskLockedByTimer(taskId)) {
+      return null;
+    }
+
+    const tasks = await StorageService.getTasks();
+    const task = tasks.find((item: Task) => item.id === taskId);
+    if (!task) {
+      return null;
+    }
+
+    task.priority = TaskService.normalizePriority(priority);
+    task.plannedFor = TaskService.normalizePlannedFor(plannedFor);
+    await StorageService.saveTasks(tasks);
+
+    return task;
   }
 
   static async delete(taskId: string): Promise<boolean> {

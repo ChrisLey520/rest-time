@@ -1,12 +1,47 @@
 export type FocusSessionStatus = 'completed' | 'abandoned';
+export type FocusAbandonReason = 'tired' | 'blocked' | 'distracted' | 'wrong_task' | 'other';
+export type FocusRestartReason = 'abandoned_retry';
+export type StarterPlanRiskLevel = 'low' | 'medium' | 'high';
+export type StarterPlanReason = 'fresh_start' | 'recent_abandon' | 'recent_away' | 'low_completion';
+export type FocusIntegrityStatus = 'clean' | 'violated';
+export type FocusIntegrityViolationReason = 'left_app' | 'app_terminated' | 'stale_presence';
 
 export interface FocusSession {
   id: string;
   taskId?: string;
   taskTitle?: string;
+  projectName?: string;
   plannedDurationSeconds: number;
   actualDurationSeconds: number;
   startedAt: number;
   endedAt: number;
   status: FocusSessionStatus;
+  abandonReason?: FocusAbandonReason;
+  awayCount?: number;
+  awaySeconds?: number;
+  microActionText?: string;
+  microActionCompletedCount?: number;
+  microActionResetCount?: number;
+  handoffNote?: string;
+  focusGuardEnabled?: boolean;
+  focusWhitelistLabel?: string;
+  focusIntegrityStatus?: FocusIntegrityStatus;
+  focusIntegrityViolationReason?: FocusIntegrityViolationReason;
+  focusIntegrityViolationCount?: number;
+  focusIntegrityViolatedAt?: number;
+  returnProofRequiredCount?: number;
+  returnProofCompletedCount?: number;
+  returnProofSeconds?: number;
+  starterPlanRiskLevel?: StarterPlanRiskLevel;
+  starterPlanReason?: StarterPlanReason;
+  starterPlanDurationSeconds?: number;
+  recoveryStepIndex?: number;
+  recoveryStepCount?: number;
+  recoveryGateCleared?: boolean;
+  timeCoinsEarned?: number;
+  timeCoinsDailyCap?: number;
+  timeCoinsSessionCap?: number;
+  restartFromSessionId?: string;
+  restartFromReason?: FocusRestartReason;
+  countsAsFocus?: boolean;
 }

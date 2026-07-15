@@ -1,24 +1,66 @@
 import { idleTimerState, TimerState } from '../models/TimerState';
-import { Task } from '../models/Task';
+import { Task, TaskPlannedFor, TaskPriority } from '../models/Task';
 import { AppStateService } from '../services/AppStateService';
+import { PlanTemplate, PlanTemplateService, planTemplates } from '../services/PlanTemplateService';
+import { PlanningService, PlanningSnapshot } from '../services/PlanningService';
 import { PromptService } from '../services/PromptService';
+import { SessionService } from '../services/SessionService';
+import { StarterPlan, StarterPlanService } from '../services/StarterPlanService';
 import { TaskService } from '../services/TaskService';
 import { TimerService } from '../services/TimerService';
 import { WidgetService } from '../services/WidgetService';
+import { suggestProjectNames } from '../utils/projectSuggestCore';
 
 type TaskFilter = 'active' | 'completed' | 'archived';
+type TaskPlanFilter = 'all' | 'today' | 'tomorrow' | 'unplanned' | 'high';
 
 @Component
 export struct TaskPage {
   @State tasks: Task[] = [];
   @State showCreateForm: boolean = false;
+  @State showTemplates: boolean = true;
   @State selectedFilter: TaskFilter = 'active';
+  @State selectedPlanFilter: TaskPlanFilter = 'all';
   @State draftTitle: string = '';
   @State draftEstimate: number = 2;
+  @State draftPriority: TaskPriority = 'normal';
+  @State draftPlannedFor: TaskPlannedFor = 'today';
+  @State draftProjectName: string = '';
   @State editingTaskId: string = '';
   @State editTitle: string = '';
   @State editEstimate: number = 1;
+  @State editPriority: TaskPriority = 'normal';
+  @State editPlannedFor: TaskPlannedFor = 'none';
+  @State editProjectName: string = '';
   @State timerState: TimerState = idleTimerState;
+  @State projectSuggestions: string[] = [];
+  @State planningSnapshot: PlanningSnapshot = {
+    pace: 'empty',
+    activeTaskCount: 0,
+    remainingFocusCount: 0,
+    suggestedTodayFocusCount: 0,
+    suggestedTodayFocusMinutes: 0,
+    carryoverFocusCount: 0,
+    todayTaskCount: 0,
+    tomorrowTaskCount: 0,
+    laterTaskCount: 0,
+    unplannedTaskCount: 0,
+    highPriorityTaskCount: 0,
+    weeklyTargetFocusCount: 0,
+    weeklyCompletedFocusCount: 0,
+    weeklyRemainingFocusCount: 0,
+    bestFocusHourText: '--',
+    headline: '今天可以先规划一件事',
+    description: '没有待办时，可以创建一个 1-2 次专注的小任务，让记录有明确归属。'
+  };
+  @State starterPlan: StarterPlan = {
+    durationSeconds: 25 * 60,
+    riskLevel: 'low',
+    reason: 'fresh_start',
+    headline: '标准专注启动',
+    description: '当前节奏稳定，可以直接开始默认专注时长。',
+    guardLabel: '稳定'
+  };
   private ticker: number = -1;
 
   aboutToAppear(): void {
@@ -37,6 +79,10 @@ export struct TaskPage {
   private async refresh(): Promise<void> {
     this.timerState = await TimerService.restore();
     await this.loadTasks();
+    this.planningSnapshot = await PlanningService.getSnapshot(this.tasks);
+    this.starterPlan = await StarterPlanService.getPlan();
+    const sessions = await SessionService.listAll();
+    this.projectSuggestions = suggestProjectNames(this.tasks, sessions);
   }
 
   private startTicker(): void {
@@ -74,11 +120,34 @@ export struct TaskPage {
       return this.archivedTasks();
     }
 
-    return this.activeTasks();
+    const activeTasks = this.activeTasks();
+    if (this.selectedPlanFilter === 'today') {
+      return activeTasks.filter((task: Task) => this.taskPlannedFor(task) === 'today');
+    }
+
+    if (this.selectedPlanFilter === 'tomorrow') {
+      return activeTasks.filter((task: Task) => this.taskPlannedFor(task) === 'tomorrow');
+    }
+
+    if (this.selectedPlanFilter === 'unplanned') {
+      return activeTasks.filter((task: Task) => this.taskPlannedFor(task) === 'none');
+    }
+
+    if (this.selectedPlanFilter === 'high') {
+      return activeTasks.filter((task: Task) => this.taskPriority(task) === 'high');
+    }
+
+    return activeTasks;
   }
 
   private async addTask(): Promise<void> {
-    const task = await TaskService.add(this.draftTitle, this.draftEstimate);
+    const task = await TaskService.add(
+      this.draftTitle,
+      this.draftEstimate,
+      this.draftPriority,
+      this.draftPlannedFor,
+      this.draftProjectName
+    );
     if (!task) {
       PromptService.showToast('先写一个任务名称');
       return;
@@ -86,9 +155,12 @@ export struct TaskPage {
 
     this.draftTitle = '';
     this.draftEstimate = 2;
+    this.draftPriority = 'normal';
+    this.draftPlannedFor = 'today';
+    this.draftProjectName = '';
     this.showCreateForm = false;
     this.selectedFilter = 'active';
-    await this.loadTasks();
+    await this.refresh();
     await WidgetService.refreshAllForms();
   }
 
@@ -99,11 +171,27 @@ export struct TaskPage {
       return;
     }
 
-    const result = await TimerService.tryStartFocus(undefined, task.id, task.title);
+    const result = await TimerService.tryStartFocus(
+      this.starterPlan.durationSeconds,
+      task.id,
+      task.title,
+      task.projectName,
+      undefined,
+      this.starterPlan.riskLevel,
+      this.starterPlan.reason
+    );
     this.timerState = result.state;
     AppStateService.setSelectedTabIndex(0);
-    PromptService.showToast(result.didStart ? '已开始专注' : result.message);
+    PromptService.showToast(result.didStart ? this.taskStartToastText() : result.message);
     await WidgetService.refreshAllForms();
+  }
+
+  private taskStartToastText(): string {
+    if (this.starterPlan.riskLevel === 'low') {
+      return '已开始专注';
+    }
+
+    return `先保底 ${Math.max(1, Math.floor(this.starterPlan.durationSeconds / 60))} 分钟`;
   }
 
   private async completeTask(task: Task): Promise<void> {
@@ -197,7 +285,14 @@ export struct TaskPage {
       return;
     }
 
-    const nextTask = await TaskService.update(task.id, nextTitle, this.editEstimate);
+    const nextTask = await TaskService.update(
+      task.id,
+      nextTitle,
+      this.editEstimate,
+      this.editPriority,
+      this.editPlannedFor,
+      this.editProjectName
+    );
     if (!nextTask) {
       AppStateService.setSelectedTabIndex(0);
       PromptService.showToast('当前任务正在专注中');
@@ -215,7 +310,57 @@ export struct TaskPage {
     this.showCreateForm = !this.showCreateForm;
     if (this.showCreateForm) {
       this.cancelEdit();
+      this.showTemplates = false;
     }
+  }
+
+  private toggleTemplates(): void {
+    this.showTemplates = !this.showTemplates;
+    if (this.showTemplates) {
+      this.showCreateForm = false;
+      this.cancelEdit();
+    }
+  }
+
+  private async applyPlanTemplate(template: PlanTemplate): Promise<void> {
+    const result = await PlanTemplateService.applyTemplate(template.id);
+    if (result.createdCount <= 0) {
+      PromptService.showToast('计划模板暂时不可用');
+      return;
+    }
+
+    this.selectedFilter = 'active';
+    this.showTemplates = false;
+    await this.refresh();
+    await WidgetService.refreshAllForms();
+    PromptService.showToast(`已生成 ${result.createdCount} 个任务`);
+  }
+
+  private async quickSetPlannedFor(task: Task, plannedFor: TaskPlannedFor): Promise<void> {
+    const nextTask = await TaskService.updatePlanning(task.id, this.taskPriority(task), plannedFor);
+    if (!nextTask) {
+      AppStateService.setSelectedTabIndex(0);
+      PromptService.showToast('当前任务正在专注中');
+      await this.refresh();
+      return;
+    }
+
+    await this.refresh();
+    await WidgetService.refreshAllForms();
+  }
+
+  private async quickToggleHighPriority(task: Task): Promise<void> {
+    const nextPriority: TaskPriority = this.taskPriority(task) === 'high' ? 'normal' : 'high';
+    const nextTask = await TaskService.updatePlanning(task.id, nextPriority, this.taskPlannedFor(task));
+    if (!nextTask) {
+      AppStateService.setSelectedTabIndex(0);
+      PromptService.showToast('当前任务正在专注中');
+      await this.refresh();
+      return;
+    }
+
+    await this.refresh();
+    await WidgetService.refreshAllForms();
   }
 
   private startEdit(task: Task): void {
@@ -229,12 +374,18 @@ export struct TaskPage {
     this.editingTaskId = task.id;
     this.editTitle = task.title;
     this.editEstimate = Math.max(1, task.estimatedFocusCount);
+    this.editPriority = this.taskPriority(task);
+    this.editPlannedFor = this.taskPlannedFor(task);
+    this.editProjectName = task.projectName ? task.projectName : '';
   }
 
   private cancelEdit(): void {
     this.editingTaskId = '';
     this.editTitle = '';
     this.editEstimate = 1;
+    this.editPriority = 'normal';
+    this.editPlannedFor = 'none';
+    this.editProjectName = '';
   }
 
   private changeDraftEstimate(delta: number): void {
@@ -243,6 +394,146 @@ export struct TaskPage {
 
   private changeEditEstimate(delta: number): void {
     this.editEstimate = Math.min(12, Math.max(1, this.editEstimate + delta));
+  }
+
+  private taskPriority(task: Task): TaskPriority {
+    if (task.priority === 'high' || task.priority === 'low') {
+      return task.priority;
+    }
+
+    return 'normal';
+  }
+
+  private taskPlannedFor(task: Task): TaskPlannedFor {
+    if (task.plannedFor === 'today' || task.plannedFor === 'tomorrow' || task.plannedFor === 'later') {
+      return task.plannedFor;
+    }
+
+    return 'none';
+  }
+
+  private priorityLabel(priority: TaskPriority): string {
+    if (priority === 'high') {
+      return '高优先';
+    }
+
+    if (priority === 'low') {
+      return '低优先';
+    }
+
+    return '普通';
+  }
+
+  private priorityColor(priority: TaskPriority): string {
+    if (priority === 'high') {
+      return '#C96F5D';
+    }
+
+    if (priority === 'low') {
+      return '#7B8785';
+    }
+
+    return '#5F9E8A';
+  }
+
+  private priorityBgColor(priority: TaskPriority): string {
+    if (priority === 'high') {
+      return '#FFF0EC';
+    }
+
+    if (priority === 'low') {
+      return '#F1F3F2';
+    }
+
+    return '#EAF3F0';
+  }
+
+  private plannedForLabel(plannedFor: TaskPlannedFor): string {
+    if (plannedFor === 'today') {
+      return '今天';
+    }
+
+    if (plannedFor === 'tomorrow') {
+      return '明天';
+    }
+
+    if (plannedFor === 'later') {
+      return '以后';
+    }
+
+    return '未计划';
+  }
+
+  private plannedForColor(plannedFor: TaskPlannedFor): string {
+    if (plannedFor === 'today') {
+      return '#4D7EA8';
+    }
+
+    if (plannedFor === 'tomorrow') {
+      return '#5F9E8A';
+    }
+
+    if (plannedFor === 'later') {
+      return '#7B8785';
+    }
+
+    return '#9AA6A3';
+  }
+
+  private projectLabel(task: Task): string {
+    return task.projectName && task.projectName.trim() ? task.projectName.trim() : '未归类';
+  }
+
+  private templateMetaText(template: PlanTemplate): string {
+    return `${template.tasks.length} 个任务 / ${template.estimatedFocusCount} 次专注`;
+  }
+
+  private templateButtonTitle(): string {
+    return this.showTemplates ? '收起模板' : '计划模板';
+  }
+
+  private cycleDraftPriority(): void {
+    if (this.draftPriority === 'normal') {
+      this.draftPriority = 'high';
+    } else if (this.draftPriority === 'high') {
+      this.draftPriority = 'low';
+    } else {
+      this.draftPriority = 'normal';
+    }
+  }
+
+  private cycleEditPriority(): void {
+    if (this.editPriority === 'normal') {
+      this.editPriority = 'high';
+    } else if (this.editPriority === 'high') {
+      this.editPriority = 'low';
+    } else {
+      this.editPriority = 'normal';
+    }
+  }
+
+  private cycleDraftPlannedFor(): void {
+    if (this.draftPlannedFor === 'today') {
+      this.draftPlannedFor = 'tomorrow';
+    } else if (this.draftPlannedFor === 'tomorrow') {
+      this.draftPlannedFor = 'later';
+    } else if (this.draftPlannedFor === 'later') {
+      this.draftPlannedFor = 'none';
+    } else {
+      this.draftPlannedFor = 'today';
+    }
+  }
+
+  private cycleEditPlannedFor(): void {
+    if (this.editPlannedFor === 'today') {
+      this.editPlannedFor = 'tomorrow';
+    } else if (this.editPlannedFor === 'tomorrow') {
+      this.editPlannedFor = 'later';
+    } else if (this.editPlannedFor === 'later') {
+      this.editPlannedFor = 'none';
+    } else {
+      this.editPlannedFor = 'today';
+    }
   }
 
   private isFocusBlocked(): boolean {
@@ -257,12 +548,156 @@ export struct TaskPage {
     return this.editingTaskId === task.id;
   }
 
+  private totalActiveEstimatedCount(): number {
+    let totalCount = 0;
+    this.activeTasks().forEach((task: Task) => {
+      totalCount += Math.max(1, task.estimatedFocusCount);
+    });
+    return totalCount;
+  }
+
+  private totalActiveCompletedCount(): number {
+    let totalCount = 0;
+    this.activeTasks().forEach((task: Task) => {
+      totalCount += Math.max(0, Math.min(task.completedFocusCount, task.estimatedFocusCount));
+    });
+    return totalCount;
+  }
+
+  private totalActiveRemainingCount(): number {
+    let totalCount = 0;
+    this.activeTasks().forEach((task: Task) => {
+      totalCount += Math.max(0, task.estimatedFocusCount - task.completedFocusCount);
+    });
+    return totalCount;
+  }
+
+  private activeProgressPercent(): number {
+    const estimatedCount = this.totalActiveEstimatedCount();
+    if (estimatedCount <= 0) {
+      return 0;
+    }
+
+    return Math.min(100, Math.floor(this.totalActiveCompletedCount() * 100 / estimatedCount));
+  }
+
+  private activeProgressWidth(): string {
+    return `${this.activeProgressPercent()}%`;
+  }
+
+  private highLeverageTask(): Task | undefined {
+    let nextTask: Task | undefined = undefined;
+    let maxRemainingCount = -1;
+    this.activeTasks().forEach((task: Task) => {
+      const remainingCount = Math.max(0, task.estimatedFocusCount - task.completedFocusCount);
+      if (remainingCount > maxRemainingCount) {
+        nextTask = task;
+        maxRemainingCount = remainingCount;
+      }
+    });
+
+    return nextTask;
+  }
+
+  private planHeadline(): string {
+    if (this.isFocusBlocked()) {
+      return this.timerState.mode === 'break' ? '先完成当前歇息' : '当前专注进行中';
+    }
+
+    return this.planningSnapshot.headline;
+  }
+
+  private planDescription(): string {
+    if (this.isFocusBlocked()) {
+      return this.timerState.taskTitle ? this.timerState.taskTitle : '自由专注';
+    }
+
+    return this.planningSnapshot.description;
+  }
+
+  private planButtonTitle(): string {
+    if (this.isFocusBlocked()) {
+      return '查看';
+    }
+
+    return this.highLeverageTask() ? '开始' : '新建';
+  }
+
+  private async onPlanAction(): Promise<void> {
+    if (this.isFocusBlocked()) {
+      AppStateService.setSelectedTabIndex(0);
+      return;
+    }
+
+    const task = this.highLeverageTask();
+    if (task) {
+      await this.startTask(task);
+      return;
+    }
+
+    this.selectedFilter = 'active';
+    this.showCreateForm = true;
+    this.cancelEdit();
+  }
+
+  private suggestedTodayText(): string {
+    if (this.planningSnapshot.suggestedTodayFocusCount <= 0) {
+      return '待规划';
+    }
+
+    return `${this.planningSnapshot.suggestedTodayFocusCount} 次`;
+  }
+
+  private carryoverText(): string {
+    if (this.planningSnapshot.carryoverFocusCount <= 0) {
+      return '无结转';
+    }
+
+    return `${this.planningSnapshot.carryoverFocusCount} 次`;
+  }
+
+  private weeklyRemainingText(): string {
+    if (this.planningSnapshot.weeklyTargetFocusCount <= 0) {
+      return '--';
+    }
+
+    return `${this.planningSnapshot.weeklyRemainingFocusCount} 次`;
+  }
+
   private filterButtonColor(filter: TaskFilter): string {
     return this.selectedFilter === filter ? '#5F9E8A' : '#DDE8EA';
   }
 
   private filterButtonFontColor(filter: TaskFilter): string {
     return this.selectedFilter === filter ? '#FFFFFF' : '#1F2A2A';
+  }
+
+  private planFilterButtonColor(filter: TaskPlanFilter): string {
+    return this.selectedPlanFilter === filter ? '#4D7EA8' : '#DDE8EA';
+  }
+
+  private planFilterButtonFontColor(filter: TaskPlanFilter): string {
+    return this.selectedPlanFilter === filter ? '#FFFFFF' : '#1F2A2A';
+  }
+
+  private planFilterCount(filter: TaskPlanFilter): number {
+    if (filter === 'today') {
+      return this.activeTasks().filter((task: Task) => this.taskPlannedFor(task) === 'today').length;
+    }
+
+    if (filter === 'tomorrow') {
+      return this.activeTasks().filter((task: Task) => this.taskPlannedFor(task) === 'tomorrow').length;
+    }
+
+    if (filter === 'unplanned') {
+      return this.activeTasks().filter((task: Task) => this.taskPlannedFor(task) === 'none').length;
+    }
+
+    if (filter === 'high') {
+      return this.activeTasks().filter((task: Task) => this.taskPriority(task) === 'high').length;
+    }
+
+    return this.activeTasks().length;
   }
 
   private startButtonTitle(task: Task): string {
@@ -425,6 +860,284 @@ export struct TaskPage {
         }
         .width('100%');
 
+        Button(this.templateButtonTitle())
+          .height(40)
+          .width('100%')
+          .fontSize(14)
+          .fontColor(this.showTemplates ? '#1F2A2A' : '#FFFFFF')
+          .backgroundColor(this.showTemplates ? '#DDE8EA' : '#4D7EA8')
+          .borderRadius(14)
+          .onClick(() => {
+            this.toggleTemplates();
+          });
+
+        Column({ space: 14 }) {
+          Row() {
+            Column({ space: 5 }) {
+              Text('执行看板')
+                .fontSize(15)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#7B8785');
+              Text(this.planHeadline())
+                .fontSize(20)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#1F2A2A')
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis });
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1);
+
+            Button(this.planButtonTitle())
+              .height(36)
+              .width(72)
+              .fontSize(13)
+              .fontColor('#FFFFFF')
+              .backgroundColor(this.isFocusBlocked() ? '#4D7EA8' : '#5F9E8A')
+              .borderRadius(12)
+              .onClick(() => {
+                this.onPlanAction();
+              });
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center);
+
+          Text(this.planDescription())
+            .fontSize(13)
+            .fontColor('#7B8785')
+            .width('100%');
+
+          Column({ space: 7 }) {
+            Row() {
+              Text(`${this.activeProgressPercent()}%`)
+                .fontSize(12)
+                .fontColor('#5F9E8A')
+                .layoutWeight(1);
+              Text(`剩余 ${this.totalActiveRemainingCount()} 次专注`)
+                .fontSize(12)
+                .fontColor('#7B8785');
+            }
+            .width('100%');
+
+            Stack({ alignContent: Alignment.Start }) {
+              Row()
+                .width('100%')
+                .height(8)
+                .backgroundColor('#EEF3F2')
+                .borderRadius(4);
+
+              Row()
+                .width(this.activeProgressWidth())
+                .height(8)
+                .backgroundColor('#5F9E8A')
+                .borderRadius(4);
+            }
+            .width('100%')
+            .height(8);
+          }
+          .width('100%');
+
+          Row({ space: 10 }) {
+            Column({ space: 3 }) {
+              Text(`${this.activeTasks().length}`)
+                .fontSize(17)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#1F2A2A');
+              Text('待办任务')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+
+            Column({ space: 3 }) {
+              Text(`${this.completedTasks().length}`)
+                .fontSize(17)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#4D7EA8');
+              Text('已完成')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+
+            Column({ space: 3 }) {
+              Text(`${this.archivedTasks().length}`)
+                .fontSize(17)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#7B8785');
+              Text('已归档')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+          }
+          .width('100%');
+
+          Row({ space: 10 }) {
+            Column({ space: 3 }) {
+              Text(this.suggestedTodayText())
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#1F2A2A');
+              Text('今日建议')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+
+            Column({ space: 3 }) {
+              Text(this.carryoverText())
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#4D7EA8');
+              Text('明日结转')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+
+            Column({ space: 3 }) {
+              Text(this.weeklyRemainingText())
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#5F9E8A');
+              Text('本周还差')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+          }
+          .width('100%');
+
+          Row({ space: 10 }) {
+            Column({ space: 3 }) {
+              Text(`${this.planningSnapshot.todayTaskCount}`)
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#4D7EA8');
+              Text('今天')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+
+            Column({ space: 3 }) {
+              Text(`${this.planningSnapshot.tomorrowTaskCount}`)
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#5F9E8A');
+              Text('明天')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+
+            Column({ space: 3 }) {
+              Text(`${this.planningSnapshot.unplannedTaskCount}`)
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#7B8785');
+              Text('未计划')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+
+            Column({ space: 3 }) {
+              Text(`${this.planningSnapshot.highPriorityTaskCount}`)
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#C96F5D');
+              Text('高优先')
+                .fontSize(11)
+                .fontColor('#7B8785');
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start);
+          }
+          .width('100%');
+        }
+        .width('100%')
+        .padding(16)
+        .backgroundColor('#FFFFFF')
+        .borderRadius(18)
+        .border({
+          width: 1,
+          color: '#DDE8EA'
+        });
+
+        if (this.showTemplates) {
+          Column({ space: 12 }) {
+            Row() {
+              Column({ space: 4 }) {
+                Text('一键计划')
+                  .fontSize(17)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor('#1F2A2A');
+                Text('不知道从哪开始时，先生成一组可执行任务。')
+                  .fontSize(12)
+                  .fontColor('#7B8785');
+              }
+              .alignItems(HorizontalAlign.Start)
+              .layoutWeight(1);
+            }
+            .width('100%');
+
+            ForEach(planTemplates, (template: PlanTemplate) => {
+              Row({ space: 12 }) {
+                Column({ space: 5 }) {
+                  Text(template.title)
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor('#1F2A2A');
+                  Text(template.subtitle)
+                    .fontSize(12)
+                    .fontColor('#7B8785')
+                    .maxLines(2)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis });
+                  Text(this.templateMetaText(template))
+                    .fontSize(11)
+                    .fontColor('#4D7EA8');
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1);
+
+                Button('生成')
+                  .height(36)
+                  .width(68)
+                  .fontSize(13)
+                  .fontColor('#FFFFFF')
+                  .backgroundColor('#5F9E8A')
+                  .borderRadius(12)
+                  .onClick(() => {
+                    this.applyPlanTemplate(template);
+                  });
+              }
+              .width('100%')
+              .padding(12)
+              .backgroundColor('#F6F8F7')
+              .borderRadius(14);
+            }, (template: PlanTemplate) => template.id);
+          }
+          .width('100%')
+          .padding(16)
+          .backgroundColor('#FFFFFF')
+          .borderRadius(18)
+          .border({
+            width: 1,
+            color: '#DDE8EA'
+          });
+        }
+
         Row({ space: 8 }) {
           Button(`待办 ${this.activeTasks().length}`)
             .height(36)
@@ -460,6 +1173,72 @@ export struct TaskPage {
             });
         }
         .width('100%');
+
+        if (this.selectedFilter === 'active') {
+          Column({ space: 8 }) {
+            Row({ space: 8 }) {
+              Button(`全部 ${this.planFilterCount('all')}`)
+                .height(34)
+                .layoutWeight(1)
+                .fontSize(12)
+                .fontColor(this.planFilterButtonFontColor('all'))
+                .backgroundColor(this.planFilterButtonColor('all'))
+                .borderRadius(11)
+                .onClick(() => {
+                  this.selectedPlanFilter = 'all';
+                });
+
+              Button(`今天 ${this.planFilterCount('today')}`)
+                .height(34)
+                .layoutWeight(1)
+                .fontSize(12)
+                .fontColor(this.planFilterButtonFontColor('today'))
+                .backgroundColor(this.planFilterButtonColor('today'))
+                .borderRadius(11)
+                .onClick(() => {
+                  this.selectedPlanFilter = 'today';
+                });
+
+              Button(`明天 ${this.planFilterCount('tomorrow')}`)
+                .height(34)
+                .layoutWeight(1)
+                .fontSize(12)
+                .fontColor(this.planFilterButtonFontColor('tomorrow'))
+                .backgroundColor(this.planFilterButtonColor('tomorrow'))
+                .borderRadius(11)
+                .onClick(() => {
+                  this.selectedPlanFilter = 'tomorrow';
+                });
+            }
+            .width('100%');
+
+            Row({ space: 8 }) {
+              Button(`未计划 ${this.planFilterCount('unplanned')}`)
+                .height(34)
+                .layoutWeight(1)
+                .fontSize(12)
+                .fontColor(this.planFilterButtonFontColor('unplanned'))
+                .backgroundColor(this.planFilterButtonColor('unplanned'))
+                .borderRadius(11)
+                .onClick(() => {
+                  this.selectedPlanFilter = 'unplanned';
+                });
+
+              Button(`高优先 ${this.planFilterCount('high')}`)
+                .height(34)
+                .layoutWeight(1)
+                .fontSize(12)
+                .fontColor(this.planFilterButtonFontColor('high'))
+                .backgroundColor(this.planFilterButtonColor('high'))
+                .borderRadius(11)
+                .onClick(() => {
+                  this.selectedPlanFilter = 'high';
+                });
+            }
+            .width('100%');
+          }
+          .width('100%');
+        }
 
         if (this.isFocusBlocked()) {
           Row() {
@@ -511,6 +1290,34 @@ export struct TaskPage {
                 this.draftTitle = value;
               });
 
+            TextInput({ placeholder: '项目/领域，例如 工作、学习、个人', text: this.draftProjectName })
+              .height(44)
+              .fontSize(14)
+              .fontColor('#1F2A2A')
+              .placeholderColor('#9AA6A3')
+              .backgroundColor('#F6F8F7')
+              .borderRadius(14)
+              .onChange((value: string) => {
+                this.draftProjectName = value;
+              });
+
+            if (this.projectSuggestions.length > 0) {
+              Flex({ wrap: FlexWrap.Wrap, space: { main: { value: 8, unit: LengthUnit.VP }, cross: { value: 8, unit: LengthUnit.VP } } }) {
+                ForEach(this.projectSuggestions, (name: string) => {
+                  Text(name)
+                    .fontSize(12)
+                    .fontColor(this.draftProjectName === name ? '#FFFFFF' : '#4D7EA8')
+                    .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                    .backgroundColor(this.draftProjectName === name ? '#4D7EA8' : '#EAF2F8')
+                    .borderRadius(11)
+                    .onClick(() => {
+                      this.draftProjectName = name;
+                    });
+                }, (name: string) => name);
+              }
+              .width('100%');
+            }
+
             Row() {
               Text('预计专注')
                 .fontSize(15)
@@ -540,6 +1347,31 @@ export struct TaskPage {
                 .borderRadius(18)
                 .onClick(() => {
                   this.changeDraftEstimate(1);
+                });
+            }
+            .width('100%');
+
+            Row({ space: 10 }) {
+              Button(`优先级 ${this.priorityLabel(this.draftPriority)}`)
+                .height(38)
+                .layoutWeight(1)
+                .fontSize(13)
+                .fontColor(this.priorityColor(this.draftPriority))
+                .backgroundColor(this.priorityBgColor(this.draftPriority))
+                .borderRadius(12)
+                .onClick(() => {
+                  this.cycleDraftPriority();
+                });
+
+              Button(`计划 ${this.plannedForLabel(this.draftPlannedFor)}`)
+                .height(38)
+                .layoutWeight(1)
+                .fontSize(13)
+                .fontColor(this.plannedForColor(this.draftPlannedFor))
+                .backgroundColor('#F6F8F7')
+                .borderRadius(12)
+                .onClick(() => {
+                  this.cycleDraftPlannedFor();
                 });
             }
             .width('100%');
@@ -616,6 +1448,30 @@ export struct TaskPage {
                   Text(`已完成 ${task.completedFocusCount}/${task.estimatedFocusCount} 次专注`)
                     .fontSize(13)
                     .fontColor('#7B8785');
+
+                  Row({ space: 6 }) {
+                    Text(this.projectLabel(task))
+                      .fontSize(11)
+                      .fontColor('#4D7EA8')
+                      .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                      .backgroundColor('#EAF2F8')
+                      .borderRadius(10);
+
+                    Text(this.priorityLabel(this.taskPriority(task)))
+                      .fontSize(11)
+                      .fontColor(this.priorityColor(this.taskPriority(task)))
+                      .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                      .backgroundColor(this.priorityBgColor(this.taskPriority(task)))
+                      .borderRadius(10);
+
+                    Text(this.plannedForLabel(this.taskPlannedFor(task)))
+                      .fontSize(11)
+                      .fontColor(this.plannedForColor(this.taskPlannedFor(task)))
+                      .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                      .backgroundColor('#F6F8F7')
+                      .borderRadius(10);
+                  }
+                  .width('100%');
                 }
                 .alignItems(HorizontalAlign.Start)
                 .layoutWeight(1);
@@ -684,6 +1540,34 @@ export struct TaskPage {
                       this.editTitle = value;
                     });
 
+                  TextInput({ placeholder: '项目/领域', text: this.editProjectName })
+                    .height(42)
+                    .fontSize(14)
+                    .fontColor('#1F2A2A')
+                    .placeholderColor('#9AA6A3')
+                    .backgroundColor('#F6F8F7')
+                    .borderRadius(14)
+                    .onChange((value: string) => {
+                      this.editProjectName = value;
+                    });
+
+                  if (this.projectSuggestions.length > 0) {
+                    Flex({ wrap: FlexWrap.Wrap, space: { main: { value: 8, unit: LengthUnit.VP }, cross: { value: 8, unit: LengthUnit.VP } } }) {
+                      ForEach(this.projectSuggestions, (name: string) => {
+                        Text(name)
+                          .fontSize(12)
+                          .fontColor(this.editProjectName === name ? '#FFFFFF' : '#4D7EA8')
+                          .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                          .backgroundColor(this.editProjectName === name ? '#4D7EA8' : '#EAF2F8')
+                          .borderRadius(11)
+                          .onClick(() => {
+                            this.editProjectName = name;
+                          });
+                      }, (name: string) => name);
+                    }
+                    .width('100%');
+                  }
+
                   Row() {
                     Text('预计专注')
                       .fontSize(14)
@@ -713,6 +1597,35 @@ export struct TaskPage {
                       .borderRadius(17)
                       .onClick(() => {
                         this.changeEditEstimate(1);
+                      });
+                  }
+                  .width('100%');
+
+                  Row({ space: 10 }) {
+                    Button(`优先级 ${this.priorityLabel(this.editPriority)}`)
+                      .height(36)
+                      .layoutWeight(1)
+                      .fontSize(13)
+                      .fontColor(this.priorityColor(this.editPriority))
+                      .backgroundColor(this.priorityBgColor(this.editPriority))
+                      .borderRadius(12)
+                      .onClick(() => {
+                        this.cycleEditPriority();
+                      });
+
+                    Button(`计划 ${this.plannedForLabel(this.editPlannedFor)}`)
+                      .height(36)
+                      .layoutWeight(1)
+                      .fontSize(13)
+                      .fontColor(this.plannedForColor(this.editPlannedFor))
+                      .backgroundColor('#FFFFFF')
+                      .borderRadius(12)
+                      .border({
+                        width: 1,
+                        color: '#DDE8EA'
+                      })
+                      .onClick(() => {
+                        this.cycleEditPlannedFor();
                       });
                   }
                   .width('100%');
@@ -748,6 +1661,53 @@ export struct TaskPage {
                 .borderRadius(14);
               } else if (task.status === 'active') {
                 Column({ space: 10 }) {
+                  Row({ space: 8 }) {
+                    Button('今天')
+                      .height(32)
+                      .layoutWeight(1)
+                      .fontSize(12)
+                      .fontColor(this.taskPlannedFor(task) === 'today' ? '#FFFFFF' : '#4D7EA8')
+                      .backgroundColor(this.taskPlannedFor(task) === 'today' ? '#4D7EA8' : '#EAF2F8')
+                      .borderRadius(10)
+                      .onClick(() => {
+                        this.quickSetPlannedFor(task, 'today');
+                      });
+
+                    Button('明天')
+                      .height(32)
+                      .layoutWeight(1)
+                      .fontSize(12)
+                      .fontColor(this.taskPlannedFor(task) === 'tomorrow' ? '#FFFFFF' : '#5F9E8A')
+                      .backgroundColor(this.taskPlannedFor(task) === 'tomorrow' ? '#5F9E8A' : '#EAF3F0')
+                      .borderRadius(10)
+                      .onClick(() => {
+                        this.quickSetPlannedFor(task, 'tomorrow');
+                      });
+
+                    Button('未计划')
+                      .height(32)
+                      .layoutWeight(1)
+                      .fontSize(12)
+                      .fontColor(this.taskPlannedFor(task) === 'none' ? '#FFFFFF' : '#7B8785')
+                      .backgroundColor(this.taskPlannedFor(task) === 'none' ? '#7B8785' : '#F1F3F2')
+                      .borderRadius(10)
+                      .onClick(() => {
+                        this.quickSetPlannedFor(task, 'none');
+                      });
+
+                    Button('高优先')
+                      .height(32)
+                      .layoutWeight(1)
+                      .fontSize(12)
+                      .fontColor(this.taskPriority(task) === 'high' ? '#FFFFFF' : '#C96F5D')
+                      .backgroundColor(this.taskPriority(task) === 'high' ? '#C96F5D' : '#FFF0EC')
+                      .borderRadius(10)
+                      .onClick(() => {
+                        this.quickToggleHighPriority(task);
+                      });
+                  }
+                  .width('100%');
+
                   Row({ space: 10 }) {
                     Button(this.startButtonTitle(task))
                       .height(40)

@@ -36,6 +36,6 @@ interface WidgetSnapshot {
 
 ## 当前接入
 
-当前已新增 `EntryFormAbility`、`form_config.json` 和 `WidgetCard.ets`，卡片使用 2*2 规格。主 App 的开始、暂停、继续、结束、任务变更和清除数据会触发卡片刷新；运行中卡片会请求 1 分钟后的下一次系统刷新。
+当前已新增 `EntryFormAbility`、`form_config.json` 和 `WidgetCard.ets`，卡片使用 2*2 规格。主 App 的开始、终止、失败整理、任务变更和清除数据会触发卡片刷新；运行中卡片会请求 1 分钟后的下一次系统刷新。硬专注期间卡片不能暗示后台可继续，离开 App 后应展示本轮失败且无时光币。
 
 命令行构建的 SDK 阻断点已定位：`DEVECO_SDK_HOME` 需要指向 DevEco SDK 根目录，例如 `/Applications/DevEco-Studio.app/Contents/sdk`。预检脚本会优先使用 DevEco 自带 JBR，并已能跑通 `assembleHap`。构建排障见 `docs/build-troubleshooting.md`。

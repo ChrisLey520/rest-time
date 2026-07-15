@@ -12,6 +12,18 @@ export interface WidgetSnapshot {
   goalProgressPercent: number;
   currentTaskTitle: string;
   timerStatus: string;
+  pauseReason: string;
+  guardStatus: string;
+  awayCount: number;
+  awaySeconds: number;
+  microActionText: string;
+  microActionCompletedCount: number;
+  returnProofRemainingSeconds: number;
+  returnProofRequiredCount: number;
+  returnProofCompletedCount: number;
+  focusIntegrityStatus: string;
+  focusIntegrityViolationReason: string;
+  focusIntegrityViolationCount: number;
   remainingSeconds: number;
   updatedAt: number;
 }
@@ -41,6 +53,18 @@ export class WidgetService {
       goalProgressPercent: goalStats.progressPercent,
       currentTaskTitle: state.taskTitle ? state.taskTitle : '自由专注',
       timerStatus: state.status,
+      pauseReason: state.pauseReason ? state.pauseReason : '',
+      guardStatus: state.guardStatus ? state.guardStatus : '',
+      awayCount: state.awayCount ? state.awayCount : 0,
+      awaySeconds: TimerService.awaySeconds(state),
+      microActionText: state.microActionText ? state.microActionText : '',
+      microActionCompletedCount: state.microActionCompletedCount ? state.microActionCompletedCount : 0,
+      returnProofRemainingSeconds: TimerService.returnProofRemainingSeconds(state),
+      returnProofRequiredCount: state.returnProofRequiredCount ? state.returnProofRequiredCount : 0,
+      returnProofCompletedCount: state.returnProofCompletedCount ? state.returnProofCompletedCount : 0,
+      focusIntegrityStatus: state.focusIntegrityStatus ? state.focusIntegrityStatus : '',
+      focusIntegrityViolationReason: state.focusIntegrityViolationReason ? state.focusIntegrityViolationReason : '',
+      focusIntegrityViolationCount: state.focusIntegrityViolationCount ? state.focusIntegrityViolationCount : 0,
       remainingSeconds,
       updatedAt: Date.now()
     };
@@ -70,14 +94,36 @@ export class WidgetService {
 
     if (snapshot.timerStatus === 'running') {
       headline = '正在专注';
-      detail = '剩余时间';
+      detail = snapshot.microActionText ? snapshot.microActionText : '剩余时间';
       statusText = '进行中';
       remainingText = formatSeconds(snapshot.remainingSeconds);
+      if (snapshot.returnProofRemainingSeconds > 0) {
+        headline = '守门整理中';
+        detail = '本轮失败，回到 App 留下下一步';
+        statusText = '整理中';
+      }
+      if (snapshot.guardStatus === 'cooling') {
+        headline = '别急着结束';
+        detail = '回到 App 继续这一段';
+        statusText = '退出缓冲';
+      }
     } else if (snapshot.timerStatus === 'paused') {
-      headline = '已暂停';
-      detail = '回到节奏时继续';
-      statusText = '暂停';
+      headline = '专注已中断';
+      detail = '本轮不可结算';
+      statusText = '已中断';
       remainingText = formatSeconds(snapshot.remainingSeconds);
+      if (snapshot.pauseReason === 'background') {
+        headline = '专注已终止';
+        detail = snapshot.awaySeconds > 0
+          ? `已离开 ${formatSeconds(snapshot.awaySeconds)}，本轮无奖励`
+          : '离开 App 后本轮失败';
+        statusText = '已失败';
+        if (snapshot.focusIntegrityStatus === 'violated') {
+          headline = '守门已触发';
+          detail = '本轮失败且无时光币';
+          statusText = '不可结算';
+        }
+      }
     } else if (snapshot.remainingSeconds > 0) {
       headline = '可以歇息';
       detail = '建议歇息时长';

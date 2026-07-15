@@ -33,6 +33,33 @@ export interface WeeklyStats {
   activeDayCount: number;
 }
 
+export interface ReviewStats {
+  currentStreakDays: number;
+  bestFocusHour: number;
+  bestFocusHourFocusSeconds: number;
+  averageCompletedFocusSeconds: number;
+  completionRatePercent: number;
+}
+
+export interface MonthlyStats {
+  monthLabel: string;
+  totalFocusSeconds: number;
+  completedFocusCount: number;
+  abandonedFocusCount: number;
+  activeDayCount: number;
+  bestStreakDays: number;
+  completionRatePercent: number;
+  averageCompletedFocusSeconds: number;
+  projects: ProjectFocusStats[];
+}
+
+export interface ProjectFocusStats {
+  projectName: string;
+  focusSeconds: number;
+  completedFocusCount: number;
+  percent: number;
+}
+
 export function startOfDayMs(timestamp: number, offsetDays: number = 0): number {
   const date = new Date(timestamp);
   date.setHours(0, 0, 0, 0);
@@ -47,14 +74,28 @@ export function dayLabel(timestamp: number): string {
   return `${month}/${day}`;
 }
 
+export function monthLabel(timestamp: number): string {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}年${date.getMonth() + 1}月`;
+}
+
 export function normalizedFocusSeconds(seconds: number): number {
   return seconds > 0 ? Math.floor(seconds) : 0;
 }
 
 export function completedSessionsInRange(sessions: FocusSession[], startAt: number, endAt: number): FocusSession[] {
   return sessions.filter((session: FocusSession) => {
-    return session.status === 'completed' && session.endedAt >= startAt && session.endedAt < endAt;
+    return session.status === 'completed'
+      && session.countsAsFocus !== false
+      && session.restartFromReason !== 'abandoned_retry'
+      && session.endedAt >= startAt
+      && session.endedAt < endAt;
   });
+}
+
+function isRecoverySession(session: FocusSession): boolean {
+  return session.status === 'completed'
+    && (session.countsAsFocus === false || session.restartFromReason === 'abandoned_retry');
 }
 
 export function sumFocusSeconds(sessions: FocusSession[]): number {
@@ -128,5 +169,150 @@ export function createWeeklyStats(sessions: FocusSession[], now: number): Weekly
     bestDayLabel,
     bestDayFocusSeconds,
     activeDayCount
+  };
+}
+
+export function createReviewStats(sessions: FocusSession[], now: number): ReviewStats {
+  const startAt = startOfDayMs(now, -29);
+  const recentSessions = sessions.filter((session: FocusSession) => {
+    return session.endedAt >= startAt && session.endedAt <= now && !isRecoverySession(session);
+  });
+  const completedSessions = recentSessions.filter((session: FocusSession) => {
+    return session.status === 'completed' && session.countsAsFocus !== false;
+  });
+  const totalFocusSeconds = sumFocusSeconds(completedSessions);
+  const hourFocusSeconds: number[] = [];
+  for (let index = 0; index < 24; index += 1) {
+    hourFocusSeconds.push(0);
+  }
+
+  completedSessions.forEach((session: FocusSession) => {
+    const hour = new Date(session.endedAt).getHours();
+    hourFocusSeconds[hour] += normalizedFocusSeconds(session.actualDurationSeconds);
+  });
+
+  let bestFocusHour = -1;
+  let bestFocusHourFocusSeconds = 0;
+  hourFocusSeconds.forEach((seconds: number, hour: number) => {
+    if (seconds > bestFocusHourFocusSeconds) {
+      bestFocusHour = hour;
+      bestFocusHourFocusSeconds = seconds;
+    }
+  });
+
+  let currentStreakDays = 0;
+  for (let offset = 0; offset > -365; offset -= 1) {
+    const startAt = startOfDayMs(now, offset);
+    const endAt = offset < 0 ? startOfDayMs(now, offset + 1) : now + 1;
+    const dayFocusSeconds = sumFocusSeconds(completedSessionsInRange(sessions, startAt, endAt));
+    if (dayFocusSeconds <= 0) {
+      break;
+    }
+
+    currentStreakDays += 1;
+  }
+
+  return {
+    currentStreakDays,
+    bestFocusHour,
+    bestFocusHourFocusSeconds,
+    averageCompletedFocusSeconds: completedSessions.length > 0
+      ? Math.round(totalFocusSeconds / completedSessions.length)
+      : 0,
+    completionRatePercent: recentSessions.length > 0
+      ? Math.round(completedSessions.length * 100 / recentSessions.length)
+      : 0
+  };
+}
+
+export function createMonthlyStats(sessions: FocusSession[], now: number, monthOffset: number = 0): MonthlyStats {
+  const monthStart = new Date(now);
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  monthStart.setMonth(monthStart.getMonth() + monthOffset);
+  const startAt = monthStart.getTime();
+  const monthEnd = new Date(startAt);
+  monthEnd.setMonth(monthEnd.getMonth() + 1);
+  const endAt = Math.min(monthEnd.getTime() - 1, now);
+  const currentMonthSessions = sessions.filter((session: FocusSession) => {
+    return session.endedAt >= startAt && session.endedAt <= endAt && !isRecoverySession(session);
+  });
+  const completedSessions = currentMonthSessions.filter((session: FocusSession) => {
+    return session.status === 'completed' && session.countsAsFocus !== false;
+  });
+  const abandonedSessions = currentMonthSessions.filter((session: FocusSession) => {
+    return session.status === 'abandoned';
+  });
+  const activeDayStarts: number[] = [];
+  const projects: ProjectFocusStats[] = [];
+
+  completedSessions.forEach((session: FocusSession) => {
+    if (normalizedFocusSeconds(session.actualDurationSeconds) <= 0) {
+      return;
+    }
+
+    const dayStart = startOfDayMs(session.endedAt);
+    if (!activeDayStarts.includes(dayStart)) {
+      activeDayStarts.push(dayStart);
+    }
+
+    const projectName = session.projectName && session.projectName.trim() ? session.projectName.trim() : '未归类';
+    let project = projects.find((item: ProjectFocusStats) => item.projectName === projectName);
+    if (!project) {
+      project = {
+        projectName,
+        focusSeconds: 0,
+        completedFocusCount: 0,
+        percent: 0
+      };
+      projects.push(project);
+    }
+
+    project.focusSeconds += normalizedFocusSeconds(session.actualDurationSeconds);
+    project.completedFocusCount += 1;
+  });
+
+  const totalFocusSeconds = sumFocusSeconds(completedSessions);
+  projects.forEach((project: ProjectFocusStats) => {
+    project.percent = totalFocusSeconds > 0 ? Math.round(project.focusSeconds * 100 / totalFocusSeconds) : 0;
+  });
+  projects.sort((left: ProjectFocusStats, right: ProjectFocusStats) => {
+    if (right.focusSeconds !== left.focusSeconds) {
+      return right.focusSeconds - left.focusSeconds;
+    }
+
+    return right.completedFocusCount - left.completedFocusCount;
+  });
+
+  const sortedDayStarts = activeDayStarts.slice().sort((left: number, right: number) => left - right);
+  let bestStreakDays = sortedDayStarts.length > 0 ? 1 : 0;
+  let currentStreakDays = bestStreakDays;
+  for (let index = 1; index < sortedDayStarts.length; index += 1) {
+    const previousDayStart = startOfDayMs(sortedDayStarts[index], -1);
+    if (sortedDayStarts[index - 1] === previousDayStart) {
+      currentStreakDays += 1;
+    } else {
+      currentStreakDays = 1;
+    }
+
+    if (currentStreakDays > bestStreakDays) {
+      bestStreakDays = currentStreakDays;
+    }
+  }
+
+  return {
+    monthLabel: monthLabel(startAt),
+    totalFocusSeconds,
+    completedFocusCount: completedSessions.length,
+    abandonedFocusCount: abandonedSessions.length,
+    activeDayCount: activeDayStarts.length,
+    bestStreakDays,
+    completionRatePercent: currentMonthSessions.length > 0
+      ? Math.round(completedSessions.length * 100 / currentMonthSessions.length)
+      : 0,
+    averageCompletedFocusSeconds: completedSessions.length > 0
+      ? Math.round(totalFocusSeconds / completedSessions.length)
+      : 0,
+    projects
   };
 }

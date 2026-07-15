@@ -7,6 +7,7 @@ export interface PomodoroConfig {
   notificationEnabled: boolean;
   vibrationEnabled: boolean;
   soundEnabled: boolean;
+  focusGuardEnabled: boolean;
   debugQuickFocusEnabled: boolean;
 }
 
@@ -19,5 +20,6 @@ export const defaultPomodoroConfig: PomodoroConfig = {
   notificationEnabled: true,
   vibrationEnabled: true,
   soundEnabled: true,
+  focusGuardEnabled: true,
   debugQuickFocusEnabled: false
 };
