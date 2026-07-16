@@ -7,6 +7,7 @@ import { Task } from '../models/Task';
 import { idleTimerState, TimerMode, TimerState } from '../models/TimerState';
 import { ErrorLogEntry } from '../utils/errorLogCore';
 import { PlanTemplate } from '../utils/planTemplateCore';
+import { normalizeProState, ProState } from '../utils/proCore';
 import { normalizeWallet, StreakGuardWallet } from '../utils/streakGuardCore';
 
 const PREFERENCES_NAME = 'qishi_preferences';
@@ -24,6 +25,7 @@ interface StorageKeys {
   customTemplates: string;
   streakGuardWallet: string;
   focusThemeId: string;
+  proState: string;
 }
 
 const STORAGE_KEYS: StorageKeys = {
@@ -38,7 +40,8 @@ const STORAGE_KEYS: StorageKeys = {
   errorLogs: 'qishi.errorLogs',
   customTemplates: 'qishi.customTemplates',
   streakGuardWallet: 'qishi.streakGuardWallet',
-  focusThemeId: 'qishi.focusThemeId'
+  focusThemeId: 'qishi.focusThemeId',
+  proState: 'qishi.proState'
 };
 
 export interface PomodoroProgress {
@@ -270,6 +273,14 @@ export class StorageService {
 
   static async saveFocusThemeId(themeId: string): Promise<void> {
     await StorageService.writeJson<string>(STORAGE_KEYS.focusThemeId, themeId);
+  }
+
+  static async getProState(): Promise<ProState> {
+    return normalizeProState(StorageService.readJson<ProState | undefined>(STORAGE_KEYS.proState, undefined));
+  }
+
+  static async saveProState(state: ProState): Promise<void> {
+    await StorageService.writeJson<ProState>(STORAGE_KEYS.proState, state);
   }
 
   static async saveBillingSettings(settings: BillingSettings): Promise<void> {

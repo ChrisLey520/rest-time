@@ -1,3 +1,6 @@
+import { isProActive, proBadgeText, ProState, proStatusText } from '../utils/proCore';
+import { StorageService } from './StorageService';
+
 export type ProFeature = 'monthly_report' | 'export' | 'billing' | 'weekly_plan';
 
 export interface ProFeatureInfo {
@@ -29,11 +32,29 @@ export const PRO_FEATURES: ProFeatureInfo[] = [
   }
 ];
 
+export interface ProSnapshot {
+  active: boolean;
+  statusText: string;
+  badgeText: string;
+}
+
 export class ProService {
-  // 体验期策略：Pro 能力全部免费开放，isPro() 仅区分"是否已订阅"的展示态。
-  // 订阅上线后接入 IAP 查询替换此处，并在各能力入口用 isPro() 做锁定判断。
-  static isPro(): boolean {
-    return false;
+  // 体验期策略：订阅未上线时 proState 恒为 none，Pro 能力全部免费开放。
+  // IAP 接入点：支付成功/收据校验后调用 activate() 写入订阅状态；
+  // 各能力入口的锁定判断统一走 getSnapshot().active。
+  static async getSnapshot(): Promise<ProSnapshot> {
+    const state = await StorageService.getProState();
+    const now = Date.now();
+    return {
+      active: isProActive(state, now),
+      statusText: proStatusText(state, now),
+      badgeText: proBadgeText(state, now)
+    };
+  }
+
+  /** IAP 支付回调/恢复购买后写入订阅状态。source 传 'iap'；运营赠送传 'promo'。 */
+  static async activate(state: ProState): Promise<void> {
+    await StorageService.saveProState(state);
   }
 
   static getFeatureInfo(feature: ProFeature): ProFeatureInfo | undefined {

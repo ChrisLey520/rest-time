@@ -96,6 +96,8 @@ docs/
   build-troubleshooting.md DevEco/Hvigor 构建排障
   privacy-policy.md 隐私政策（本地存储、无上传、权限说明）
   release-checklist.md 发布清单（签名、合规、市场素材、真机回归）
+  store-listing.md  应用市场素材（简介、描述、关键词、截图清单）
+  time-coin-usage.md 时光币用途方案与竞品调研
   assets/           图标源文件
 scripts/
   check-deveco-env.mjs DevEco/Hvigor 环境预检

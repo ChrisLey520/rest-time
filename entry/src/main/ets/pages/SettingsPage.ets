@@ -2,7 +2,7 @@ import { BillingSettings, BillingService, defaultBillingSettings } from '../serv
 import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig';
 import { ErrorLogEntry, ErrorLogService, errorSourceLabel } from '../services/ErrorLogService';
 import { FocusThemeService, ThemeListItem, ThemeStoreSnapshot } from '../services/FocusThemeService';
-import { PRO_FEATURES, ProFeatureInfo, ProService } from '../services/ProService';
+import { PRO_FEATURES, ProFeatureInfo, ProService, ProSnapshot } from '../services/ProService';
 import { PromptService } from '../services/PromptService';
 import { ReminderService } from '../services/ReminderService';
 import { StorageService } from '../services/StorageService';
@@ -26,6 +26,11 @@ export struct SettingsPage {
   @State billingSettings: BillingSettings = defaultBillingSettings;
   @State errorLogs: ErrorLogEntry[] = [];
   @State showErrorLogs: boolean = false;
+  @State proSnapshot: ProSnapshot = {
+    active: false,
+    statusText: '体验期 · 以下能力当前全部免费开放',
+    badgeText: '体验期'
+  };
   @State themeSnapshot: ThemeStoreSnapshot = {
     items: [],
     activeTheme: {
@@ -49,6 +54,7 @@ export struct SettingsPage {
     this.config = await StorageService.getConfig();
     this.billingSettings = await BillingService.getSettings();
     this.themeSnapshot = await FocusThemeService.getSnapshot();
+    this.proSnapshot = await ProService.getSnapshot();
     await this.loadErrorLogs();
   }
 
@@ -388,14 +394,14 @@ export struct SettingsPage {
                 .fontSize(20)
                 .fontWeight(FontWeight.Bold)
                 .fontColor('#1F2A2A');
-              Text(ProService.isPro() ? '已订阅 · 全部能力已解锁' : '体验期 · 以下能力当前全部免费开放')
+              Text(this.proSnapshot.statusText)
                 .fontSize(13)
                 .fontColor('#5F9E8A');
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1);
 
-            Text(ProService.isPro() ? 'Pro' : '体验期')
+            Text(this.proSnapshot.badgeText)
               .fontSize(12)
               .fontColor('#FFFFFF')
               .padding({ left: 10, right: 10, top: 5, bottom: 5 })
@@ -428,7 +434,7 @@ export struct SettingsPage {
             .alignItems(VerticalAlign.Top);
           }, (feature: ProFeatureInfo) => feature.feature);
 
-          if (!ProService.isPro()) {
+          if (!this.proSnapshot.active) {
             Text('订阅上线后，已有的记录和导出不受影响；体验期产生的数据始终保留在你的设备本地。')
               .fontSize(11)
               .fontColor('#7B8785')
