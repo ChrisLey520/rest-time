@@ -5,10 +5,16 @@ import { createEmptyWallet, timeCoinBalance } from './helpers/streakGuardCore.mj
 
 const now = Date.parse('2026-07-15T10:00:00');
 
-// 动效定义:6 个,默认免费,圆环层数 1-4
-assert.equal(FOCUS_EFFECTS.length, 6);
-assert.deepEqual(FOCUS_EFFECTS.map((effect) => effect.price), [0, 250, 350, 300, 400, 550]);
-assert.deepEqual(FOCUS_EFFECTS.map((effect) => effect.ringColors.length), [1, 2, 3, 2, 3, 4]);
+// 动效定义:10 个,默认免费,圆环层数 1-5
+assert.equal(FOCUS_EFFECTS.length, 10);
+assert.deepEqual(
+  FOCUS_EFFECTS.map((effect) => effect.price),
+  [0, 250, 350, 300, 400, 550, 280, 450, 600, 800]
+);
+assert.deepEqual(
+  FOCUS_EFFECTS.map((effect) => effect.ringColors.length),
+  [1, 2, 3, 2, 3, 4, 2, 3, 4, 5]
+);
 
 // id 唯一
 assert.equal(new Set(FOCUS_EFFECTS.map((effect) => effect.id)).size, FOCUS_EFFECTS.length);

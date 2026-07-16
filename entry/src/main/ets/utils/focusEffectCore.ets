@@ -68,6 +68,42 @@ export const FOCUS_EFFECTS: FocusEffect[] = [
     ringColors: ['#C96F5D', '#B08954', '#E8D5B0', '#F0E4D8'],
     symbol: '✹',
     durationMs: 1600
+  },
+  {
+    id: 'leaf_fall',
+    title: '落叶',
+    subtitle: '双环木棕，一片叶子落定的轻响',
+    price: 280,
+    ringColors: ['#A8815E', '#D9C6A8'],
+    symbol: '❧',
+    durationMs: 1100
+  },
+  {
+    id: 'moonrise',
+    title: '月升',
+    subtitle: '三层灰蓝托起一轮月，给夜里安静的收束',
+    price: 450,
+    ringColors: ['#37444A', '#5E7A8A', '#C8D8E8'],
+    symbol: '☾',
+    durationMs: 1400
+  },
+  {
+    id: 'first_snow',
+    title: '初雪',
+    subtitle: '四层清浅银灰，落雪无声的完成',
+    price: 600,
+    ringColors: ['#9AA6A3', '#B8C4C1', '#D6DEDC', '#EEF3F2'],
+    symbol: '❄',
+    durationMs: 1500
+  },
+  {
+    id: 'zenith',
+    title: '天心',
+    subtitle: '五层全色环，日晷指向正午——顶级收藏',
+    price: 800,
+    ringColors: ['#C96F5D', '#B08954', '#7FA05F', '#5E9CA8', '#8A7FB4'],
+    symbol: '✺',
+    durationMs: 1800
   }
 ];
 

@@ -4,10 +4,13 @@ import { createEmptyWallet, timeCoinBalance } from './helpers/streakGuardCore.mj
 
 const now = Date.parse('2026-07-15T10:00:00');
 
-// 主题定义:8 个主题,默认免费,付费主题定价 300-800
-assert.equal(FOCUS_THEMES.length, 8);
+// 主题定义:12 个主题,默认免费,付费主题定价 300-1000
+assert.equal(FOCUS_THEMES.length, 12);
 assert.equal(FOCUS_THEMES[0].price, 0);
-assert.deepEqual(FOCUS_THEMES.map((theme) => theme.price), [0, 300, 400, 500, 350, 450, 600, 800]);
+assert.deepEqual(
+  FOCUS_THEMES.map((theme) => theme.price),
+  [0, 300, 400, 500, 350, 450, 600, 800, 380, 520, 560, 1000]
+);
 
 // id 唯一
 assert.equal(new Set(FOCUS_THEMES.map((theme) => theme.id)).size, FOCUS_THEMES.length);

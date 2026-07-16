@@ -94,6 +94,46 @@ export const FOCUS_THEMES: FocusTheme[] = [
     cardColor: '#2E2824',
     timerColor: '#F0E4D8',
     accentColor: '#C96F5D'
+  },
+  {
+    id: 'mist_rain',
+    title: '烟雨',
+    subtitle: '灰青水汽，落雨天窗边的专注',
+    price: 380,
+    backgroundColor: '#E8EDEE',
+    cardColor: '#F4F7F8',
+    timerColor: '#37444A',
+    accentColor: '#5E9CA8'
+  },
+  {
+    id: 'dawn',
+    title: '破晓',
+    subtitle: '天亮前的青灰与一线暖光，给早起第一段',
+    price: 520,
+    backgroundColor: '#2A3038',
+    cardColor: '#343B45',
+    timerColor: '#F2E9DA',
+    accentColor: '#D9A662'
+  },
+  {
+    id: 'wheat',
+    title: '麦浪',
+    subtitle: '干燥的暖黄，午后田野的踏实感',
+    price: 560,
+    backgroundColor: '#F3EBDA',
+    cardColor: '#FAF5EA',
+    timerColor: '#4A3F2E',
+    accentColor: '#B08954'
+  },
+  {
+    id: 'deep_sea',
+    title: '深壑',
+    subtitle: '海面千米之下，只剩你和这一段时间',
+    price: 1000,
+    backgroundColor: '#101820',
+    cardColor: '#182230',
+    timerColor: '#C8D8E8',
+    accentColor: '#4D7EA8'
   }
 ];
 
