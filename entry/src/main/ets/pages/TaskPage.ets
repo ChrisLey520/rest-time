@@ -9,6 +9,7 @@ import { StarterPlan, StarterPlanService } from '../services/StarterPlanService'
 import { TaskService } from '../services/TaskService';
 import { TimerService } from '../services/TimerService';
 import { WidgetService } from '../services/WidgetService';
+import { projectColor } from '../utils/projectColorCore';
 import { suggestProjectNames } from '../utils/projectSuggestCore';
 
 type TaskFilter = 'active' | 'completed' | 'archived';
@@ -1304,15 +1305,19 @@ export struct TaskPage {
             if (this.projectSuggestions.length > 0) {
               Flex({ wrap: FlexWrap.Wrap, space: { main: { value: 8, unit: LengthUnit.VP }, cross: { value: 8, unit: LengthUnit.VP } } }) {
                 ForEach(this.projectSuggestions, (name: string) => {
-                  Text(name)
-                    .fontSize(12)
-                    .fontColor(this.draftProjectName === name ? '#FFFFFF' : '#4D7EA8')
-                    .padding({ left: 10, right: 10, top: 5, bottom: 5 })
-                    .backgroundColor(this.draftProjectName === name ? '#4D7EA8' : '#EAF2F8')
-                    .borderRadius(11)
-                    .onClick(() => {
-                      this.draftProjectName = name;
-                    });
+                  Row({ space: 5 }) {
+                    Circle({ width: 7, height: 7 })
+                      .fill(projectColor(name));
+                    Text(name)
+                      .fontSize(12)
+                      .fontColor(this.draftProjectName === name ? '#FFFFFF' : '#4D7EA8');
+                  }
+                  .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                  .backgroundColor(this.draftProjectName === name ? '#4D7EA8' : '#EAF2F8')
+                  .borderRadius(11)
+                  .onClick(() => {
+                    this.draftProjectName = name;
+                  });
                 }, (name: string) => name);
               }
               .width('100%');
@@ -1450,12 +1455,16 @@ export struct TaskPage {
                     .fontColor('#7B8785');
 
                   Row({ space: 6 }) {
-                    Text(this.projectLabel(task))
-                      .fontSize(11)
-                      .fontColor('#4D7EA8')
-                      .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                      .backgroundColor('#EAF2F8')
-                      .borderRadius(10);
+                    Row({ space: 5 }) {
+                      Circle({ width: 7, height: 7 })
+                        .fill(projectColor(task.projectName));
+                      Text(this.projectLabel(task))
+                        .fontSize(11)
+                        .fontColor('#4D7EA8');
+                    }
+                    .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                    .backgroundColor('#EAF2F8')
+                    .borderRadius(10);
 
                     Text(this.priorityLabel(this.taskPriority(task)))
                       .fontSize(11)
@@ -1554,15 +1563,19 @@ export struct TaskPage {
                   if (this.projectSuggestions.length > 0) {
                     Flex({ wrap: FlexWrap.Wrap, space: { main: { value: 8, unit: LengthUnit.VP }, cross: { value: 8, unit: LengthUnit.VP } } }) {
                       ForEach(this.projectSuggestions, (name: string) => {
-                        Text(name)
-                          .fontSize(12)
-                          .fontColor(this.editProjectName === name ? '#FFFFFF' : '#4D7EA8')
-                          .padding({ left: 10, right: 10, top: 5, bottom: 5 })
-                          .backgroundColor(this.editProjectName === name ? '#4D7EA8' : '#EAF2F8')
-                          .borderRadius(11)
-                          .onClick(() => {
-                            this.editProjectName = name;
-                          });
+                        Row({ space: 5 }) {
+                          Circle({ width: 7, height: 7 })
+                            .fill(projectColor(name));
+                          Text(name)
+                            .fontSize(12)
+                            .fontColor(this.editProjectName === name ? '#FFFFFF' : '#4D7EA8');
+                        }
+                        .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                        .backgroundColor(this.editProjectName === name ? '#4D7EA8' : '#EAF2F8')
+                        .borderRadius(11)
+                        .onClick(() => {
+                          this.editProjectName = name;
+                        });
                       }, (name: string) => name);
                     }
                     .width('100%');

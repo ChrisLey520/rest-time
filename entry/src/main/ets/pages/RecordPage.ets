@@ -12,6 +12,7 @@ import { CsvExportService } from '../services/CsvExportService';
 import { FileExportService } from '../services/FileExportService';
 import { ImageExportService } from '../services/ImageExportService';
 import { createReportImageFileName } from '../utils/csvExportCore';
+import { projectColor } from '../utils/projectColorCore';
 import {
   MonthlyReport,
   MonthlyReportMetric,
@@ -1155,7 +1156,9 @@ export struct RecordPage {
 
                 ForEach(this.monthlyReport.projects, (project: MonthlyReportProject) => {
                   Column({ space: 6 }) {
-                    Row() {
+                    Row({ space: 6 }) {
+                      Circle({ width: 8, height: 8 })
+                        .fill(projectColor(project.projectName));
                       Text(project.projectName)
                         .fontSize(13)
                         .fontColor('#1F2A2A')
@@ -1166,7 +1169,8 @@ export struct RecordPage {
                         .fontSize(12)
                         .fontColor('#7B8785');
                     }
-                    .width('100%');
+                    .width('100%')
+                    .alignItems(VerticalAlign.Center);
 
                     Stack({ alignContent: Alignment.Start }) {
                       Row()
@@ -1178,7 +1182,7 @@ export struct RecordPage {
                       Row()
                         .width(this.reportProjectProgressWidth(project))
                         .height(7)
-                        .backgroundColor('#4D7EA8')
+                        .backgroundColor(projectColor(project.projectName))
                         .borderRadius(4);
                     }
                     .width('100%')
@@ -1338,7 +1342,9 @@ export struct RecordPage {
               Column({ space: 10 }) {
                 ForEach(this.topBillingProjects(), (project: BillableProject) => {
                   Column({ space: 6 }) {
-                    Row() {
+                    Row({ space: 6 }) {
+                      Circle({ width: 8, height: 8 })
+                        .fill(projectColor(project.projectName));
                       Text(project.projectName)
                         .fontSize(13)
                         .fontColor('#1F2A2A')
@@ -1351,7 +1357,8 @@ export struct RecordPage {
                         .fontSize(12)
                         .fontColor(project.billable ? '#7B8785' : '#C96F5D');
                     }
-                    .width('100%');
+                    .width('100%')
+                    .alignItems(VerticalAlign.Center);
 
                     Stack({ alignContent: Alignment.Start }) {
                       Row()
@@ -1363,7 +1370,7 @@ export struct RecordPage {
                       Row()
                         .width(this.billingProjectProgressWidth(project))
                         .height(7)
-                        .backgroundColor(project.billable ? '#5F9E8A' : '#DDE8EA')
+                        .backgroundColor(project.billable ? projectColor(project.projectName) : '#DDE8EA')
                         .borderRadius(4);
                     }
                     .width('100%')
@@ -1529,12 +1536,16 @@ export struct RecordPage {
                         .maxLines(1)
                         .textOverflow({ overflow: TextOverflow.Ellipsis });
 
-                      Text(this.sessionProjectName(session))
-                        .fontSize(11)
-                        .fontColor('#4D7EA8')
-                        .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                        .backgroundColor('#EAF2F8')
-                        .borderRadius(10);
+                      Row({ space: 5 }) {
+                        Circle({ width: 7, height: 7 })
+                          .fill(projectColor(session.projectName));
+                        Text(this.sessionProjectName(session))
+                          .fontSize(11)
+                          .fontColor('#4D7EA8');
+                      }
+                      .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                      .backgroundColor('#EAF2F8')
+                      .borderRadius(10);
 
                       if (session.awaySeconds && session.awaySeconds > 0) {
                         Text(`前台专注凭证：离开 ${session.awayCount ? session.awayCount : 1} 次 / ${formatDuration(session.awaySeconds)} 未计入`)
