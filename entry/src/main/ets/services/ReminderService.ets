@@ -1,5 +1,6 @@
 import reminderAgentManager from '@ohos.reminderAgentManager';
 import { TimerMode, TimerState } from '../models/TimerState';
+import { ErrorLogService } from './ErrorLogService';
 import { ScheduledReminderState, StorageService } from './StorageService';
 
 const BUNDLE_NAME = 'com.qishi.focus';
@@ -84,6 +85,7 @@ export class ReminderService {
       await StorageService.saveScheduledReminder(createReminderRecord(reminderId, state));
     } catch (error) {
       await StorageService.clearScheduledReminder();
+      await ErrorLogService.record('reminder', `到点提醒创建失败：${error instanceof Error ? error.message : error}`);
     }
   }
 

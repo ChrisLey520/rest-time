@@ -1,5 +1,6 @@
 import notificationManager from '@ohos.notificationManager';
 import common from '@ohos.app.ability.common';
+import { ErrorLogService } from './ErrorLogService';
 import { PromptService } from './PromptService';
 import { StorageService } from './StorageService';
 
@@ -51,6 +52,7 @@ export class NotificationService {
       await notificationManager.publish(NotificationService.createTextRequest({ title, text }));
     } catch (error) {
       PromptService.showToast(title);
+      await ErrorLogService.record('notification', `完成通知发送失败：${error instanceof Error ? error.message : error}`);
     }
   }
 
@@ -67,6 +69,7 @@ export class NotificationService {
       await notificationManager.publish(NotificationService.createTextRequest({ title, text }));
     } catch (error) {
       PromptService.showToast(title);
+      await ErrorLogService.record('notification', `歇息通知发送失败：${error instanceof Error ? error.message : error}`);
     }
   }
 }

@@ -22,6 +22,7 @@ const checks = [
   ['node', ['test/time_coin_core.test.mjs']],
   ['node', ['test/csv_export_core.test.mjs']],
   ['node', ['test/project_suggest_core.test.mjs']],
+  ['node', ['test/error_log_core.test.mjs']],
   ['node', ['test/task_core.test.mjs']],
   ['node', ['--check', 'scripts/check-deveco-env.mjs']],
   ['git', ['diff', '--check']]

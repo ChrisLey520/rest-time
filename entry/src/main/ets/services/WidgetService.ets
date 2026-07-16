@@ -2,6 +2,7 @@ import formBindingData from '@ohos.app.form.formBindingData';
 import formProvider from '@ohos.app.form.formProvider';
 import { formatSeconds } from '../utils/dateTime';
 import { TimerState } from '../models/TimerState';
+import { ErrorLogService } from './ErrorLogService';
 import { StatsService } from './StatsService';
 import { StorageService, WidgetFormIds } from './StorageService';
 import { TimerService } from './TimerService';
@@ -179,6 +180,7 @@ export class WidgetService {
       await WidgetService.scheduleNextRefresh(formId, data);
     } catch (error) {
       // The host can remove or throttle cards; the app state should not fail because of it.
+      await ErrorLogService.record('widget', `卡片刷新失败：${error instanceof Error ? error.message : error}`);
     }
   }
 

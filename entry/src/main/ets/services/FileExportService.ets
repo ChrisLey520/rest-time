@@ -1,6 +1,7 @@
 import fs from '@ohos.file.fs';
 import picker from '@ohos.file.picker';
 import { CsvExportFile } from '../utils/csvExportCore';
+import { ErrorLogService } from './ErrorLogService';
 
 export interface FileExportResult {
   savedCount: number;
@@ -24,6 +25,7 @@ export class FileExportService {
       const documentPicker = new picker.DocumentViewPicker();
       uris = await documentPicker.save(saveOptions);
     } catch (error) {
+      await ErrorLogService.record('export', `文档选择器打开失败：${error instanceof Error ? error.message : error}`);
       return { savedCount: 0, message: '未完成保存，可稍后再试' };
     }
 
@@ -40,6 +42,7 @@ export class FileExportService {
         savedCount += 1;
       } catch (error) {
         // 单个文件失败不阻塞其余文件，最终以 savedCount 反馈结果。
+        await ErrorLogService.record('export', `CSV 写入失败：${files[index].fileName}`);
       }
     }
 

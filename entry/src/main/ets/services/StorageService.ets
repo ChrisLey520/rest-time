@@ -5,6 +5,7 @@ import { FocusSession } from '../models/FocusSession';
 import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig';
 import { Task } from '../models/Task';
 import { idleTimerState, TimerMode, TimerState } from '../models/TimerState';
+import { ErrorLogEntry } from '../utils/errorLogCore';
 
 const PREFERENCES_NAME = 'qishi_preferences';
 
@@ -17,6 +18,7 @@ interface StorageKeys {
   progress: string;
   widgetFormIds: string;
   scheduledReminder: string;
+  errorLogs: string;
 }
 
 const STORAGE_KEYS: StorageKeys = {
@@ -27,7 +29,8 @@ const STORAGE_KEYS: StorageKeys = {
   billingSettings: 'qishi.billingSettings',
   progress: 'qishi.progress',
   widgetFormIds: 'qishi.widgetFormIds',
-  scheduledReminder: 'qishi.scheduledReminder'
+  scheduledReminder: 'qishi.scheduledReminder',
+  errorLogs: 'qishi.errorLogs'
 };
 
 export interface PomodoroProgress {
@@ -224,6 +227,14 @@ export class StorageService {
       STORAGE_KEYS.billingSettings,
       defaultBillingSettings
     ));
+  }
+
+  static async getErrorLogs(): Promise<ErrorLogEntry[]> {
+    return StorageService.readJson<ErrorLogEntry[]>(STORAGE_KEYS.errorLogs, []);
+  }
+
+  static async saveErrorLogs(entries: ErrorLogEntry[]): Promise<void> {
+    await StorageService.writeJson<ErrorLogEntry[]>(STORAGE_KEYS.errorLogs, entries);
   }
 
   static async saveBillingSettings(settings: BillingSettings): Promise<void> {

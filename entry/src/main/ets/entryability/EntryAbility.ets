@@ -1,5 +1,6 @@
 import UIAbility from '@ohos.app.ability.UIAbility';
 import window from '@ohos.window';
+import { ErrorLogService } from '../services/ErrorLogService';
 import { NotificationService } from '../services/NotificationService';
 import { ReminderService } from '../services/ReminderService';
 import { StorageService } from '../services/StorageService';
@@ -46,6 +47,7 @@ export default class EntryAbility extends UIAbility {
       await this.syncKeepScreenOn(state.mode === 'focus' && state.status === 'running');
     } catch (error) {
       // Runtime recovery must be best-effort; the UI can still load and recover on the next tick.
+      await ErrorLogService.record('runtime', `前台状态恢复失败：${error instanceof Error ? error.message : error}`);
     }
   }
 

@@ -1,5 +1,6 @@
 import { BillingSettings, BillingService, defaultBillingSettings } from '../services/BillingService';
 import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig';
+import { ErrorLogEntry, ErrorLogService, errorSourceLabel } from '../services/ErrorLogService';
 import { PRO_FEATURES, ProService } from '../services/ProService';
 import { PromptService } from '../services/PromptService';
 import { ReminderService } from '../services/ReminderService';
@@ -22,6 +23,8 @@ export struct SettingsPage {
     debugQuickFocusEnabled: false
   };
   @State billingSettings: BillingSettings = defaultBillingSettings;
+  @State errorLogs: ErrorLogEntry[] = [];
+  @State showErrorLogs: boolean = false;
 
   aboutToAppear(): void {
     this.loadConfig();
@@ -30,6 +33,26 @@ export struct SettingsPage {
   private async loadConfig(): Promise<void> {
     this.config = await StorageService.getConfig();
     this.billingSettings = await BillingService.getSettings();
+    await this.loadErrorLogs();
+  }
+
+  private async loadErrorLogs(): Promise<void> {
+    this.errorLogs = await ErrorLogService.listAll();
+  }
+
+  private errorTimeText(timestamp: number): string {
+    const date = new Date(timestamp);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = `${date.getHours()}`.padStart(2, '0');
+    const minutes = `${date.getMinutes()}`.padStart(2, '0');
+    return `${month}/${day} ${hours}:${minutes}`;
+  }
+
+  private async clearErrorLogs(): Promise<void> {
+    await ErrorLogService.clearAll();
+    await this.loadErrorLogs();
+    PromptService.showToast('异常日志已清空');
   }
 
   private async saveConfig(config: PomodoroConfig): Promise<void> {
@@ -854,6 +877,86 @@ export struct SettingsPage {
               });
           }
           .width('100%');
+
+          Row() {
+            Column({ space: 3 }) {
+              Text('异常日志')
+                .fontSize(15)
+                .fontColor('#1F2A2A');
+              Text(this.errorLogs.length > 0 ? `最近 ${this.errorLogs.length} 条提醒/存储/卡片异常` : '暂无异常记录')
+                .fontSize(12)
+                .fontColor('#7B8785');
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1);
+
+            Toggle({ type: ToggleType.Switch, isOn: this.showErrorLogs })
+              .selectedColor('#5F9E8A')
+              .onChange((isOn: boolean) => {
+                this.showErrorLogs = isOn;
+                if (isOn) {
+                  this.loadErrorLogs();
+                }
+              });
+          }
+          .width('100%');
+
+          if (this.showErrorLogs) {
+            if (this.errorLogs.length === 0) {
+              Text('提醒失败、存储失败和卡片刷新失败会记录在这里，用于排查真机问题。')
+                .fontSize(12)
+                .fontColor('#7B8785')
+                .width('100%')
+                .padding(10)
+                .backgroundColor('#F6F8F7')
+                .borderRadius(12);
+            } else {
+              Column({ space: 8 }) {
+                ForEach(this.errorLogs.slice(0, 10), (entry: ErrorLogEntry) => {
+                  Column({ space: 3 }) {
+                    Row() {
+                      Text(errorSourceLabel(entry.source))
+                        .fontSize(11)
+                        .fontColor('#C96F5D')
+                        .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+                        .backgroundColor('#FFF0EC')
+                        .borderRadius(9);
+                      Text(this.errorTimeText(entry.at))
+                        .fontSize(11)
+                        .fontColor('#9AA6A3')
+                        .layoutWeight(1)
+                        .textAlign(TextAlign.End);
+                    }
+                    .width('100%');
+
+                    Text(entry.message)
+                      .fontSize(12)
+                      .fontColor('#1F2A2A')
+                      .width('100%')
+                      .maxLines(2)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis });
+                  }
+                  .width('100%')
+                  .padding(10)
+                  .backgroundColor('#F6F8F7')
+                  .borderRadius(12)
+                  .alignItems(HorizontalAlign.Start);
+                }, (entry: ErrorLogEntry) => `${entry.at}-${entry.source}`);
+
+                Button('清空异常日志')
+                  .height(36)
+                  .width('100%')
+                  .fontSize(13)
+                  .fontColor('#C96F5D')
+                  .backgroundColor('#FFF0EC')
+                  .borderRadius(12)
+                  .onClick(() => {
+                    this.clearErrorLogs();
+                  });
+              }
+              .width('100%');
+            }
+          }
         }
         .width('100%')
         .padding(18)
