@@ -164,3 +164,7 @@ export function createExportFiles(bundle: CsvExportBundle): CsvExportFile[] {
     { fileName: `${baseName}_专注明细.csv`, content: bundle.sessionsCsv }
   ];
 }
+
+export function createReportImageFileName(exportTitle: string): string {
+  return `${fileSafeName(exportTitle)}.png`;
+}

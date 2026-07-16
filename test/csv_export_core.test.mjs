@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createExportFiles, createMonthlyReportCsvBundle } from './helpers/csvExportCore.mjs';
+import { createExportFiles, createMonthlyReportCsvBundle, createReportImageFileName } from './helpers/csvExportCore.mjs';
 
 const report = {
   title: '2026年6月专注报告',
@@ -127,5 +127,8 @@ assert.equal(files[1].fileName, '2026年6月_栖时_月度报告_项目投入.cs
 assert.equal(files[2].fileName, '2026年6月_栖时_月度报告_客户账单.csv');
 assert.equal(files[3].fileName, '2026年6月_栖时_月度报告_专注明细.csv');
 assert.equal(files[3].content, bundle.sessionsCsv);
+
+assert.equal(createReportImageFileName(report.exportTitle), '2026年6月_栖时_月度报告.png');
+assert.equal(createReportImageFileName('a/b:c*d?e"f<g>h|i'), 'a_b_c_d_e_f_g_h_i.png');
 
 console.log('csv export core tests passed');

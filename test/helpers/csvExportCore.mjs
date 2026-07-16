@@ -143,3 +143,7 @@ export function createExportFiles(bundle) {
     { fileName: `${baseName}_专注明细.csv`, content: bundle.sessionsCsv }
   ];
 }
+
+export function createReportImageFileName(exportTitle) {
+  return `${fileSafeName(exportTitle)}.png`;
+}

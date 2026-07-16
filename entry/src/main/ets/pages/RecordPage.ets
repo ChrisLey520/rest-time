@@ -10,6 +10,8 @@ import {
 } from '../services/BillingService';
 import { CsvExportService } from '../services/CsvExportService';
 import { FileExportService } from '../services/FileExportService';
+import { ImageExportService } from '../services/ImageExportService';
+import { createReportImageFileName } from '../utils/csvExportCore';
 import {
   MonthlyReport,
   MonthlyReportMetric,
@@ -74,8 +76,9 @@ const defaultBillingSummary: BillingSummary = {
   projects: []
 };
 
-const defaultRecordStageSnapshot: RecordStageSnapshot = {
-  stage: 'empty',
+const MONTHLY_REPORT_CARD_ID = 'monthly_report_card';
+
+const defaultRecordStageSnapshot: RecordStageSnapshot = {  stage: 'empty',
   activeDayCount: 0,
   completedFocusCount: 0,
   projectSessionCount: 0,
@@ -460,6 +463,12 @@ export struct RecordPage {
   private async showReportExportPreview(): Promise<void> {
     const files = await CsvExportService.createCurrentExportFiles();
     const result = await FileExportService.saveCsvFiles(files);
+    PromptService.showToast(result.message);
+  }
+
+  private async saveReportImage(): Promise<void> {
+    const fileName = createReportImageFileName(this.monthlyReport.exportTitle);
+    const result = await ImageExportService.saveComponentAsPng(MONTHLY_REPORT_CARD_ID, fileName);
     PromptService.showToast(result.message);
   }
 
@@ -1184,17 +1193,32 @@ export struct RecordPage {
               .borderRadius(14);
             }
 
-            Button('导出月度报告')
-              .height(42)
-              .width('100%')
-              .fontSize(14)
-              .fontColor('#FFFFFF')
-              .backgroundColor('#4D7EA8')
-              .borderRadius(14)
-              .onClick(() => {
-                this.showReportExportPreview();
-              });
+            Row({ space: 8 }) {
+              Button('导出 CSV')
+                .height(42)
+                .layoutWeight(1)
+                .fontSize(14)
+                .fontColor('#FFFFFF')
+                .backgroundColor('#4D7EA8')
+                .borderRadius(14)
+                .onClick(() => {
+                  this.showReportExportPreview();
+                });
+
+              Button('保存长图')
+                .height(42)
+                .layoutWeight(1)
+                .fontSize(14)
+                .fontColor('#4D7EA8')
+                .backgroundColor('#EAF2F8')
+                .borderRadius(14)
+                .onClick(() => {
+                  this.saveReportImage();
+                });
+            }
+            .width('100%');
           }
+          .id(MONTHLY_REPORT_CARD_ID)
           .width('100%')
           .padding(18)
           .backgroundColor('#FFFFFF')
