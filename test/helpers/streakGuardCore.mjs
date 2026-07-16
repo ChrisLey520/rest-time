@@ -5,7 +5,8 @@ export function createEmptyWallet() {
   return {
     heldGuards: 0,
     coveredDayStarts: [],
-    spends: []
+    spends: [],
+    bonusCoins: 0
   };
 }
 
@@ -17,7 +18,8 @@ export function normalizeWallet(wallet) {
   return {
     heldGuards: Math.max(0, Math.floor(wallet.heldGuards || 0)),
     coveredDayStarts: wallet.coveredDayStarts || [],
-    spends: wallet.spends || []
+    spends: wallet.spends || [],
+    bonusCoins: Math.max(0, Math.floor(wallet.bonusCoins || 0))
   };
 }
 
@@ -40,7 +42,7 @@ export function totalSpentTimeCoins(wallet) {
 }
 
 export function timeCoinBalance(sessions, wallet) {
-  return Math.max(0, totalEarnedTimeCoins(sessions) - totalSpentTimeCoins(wallet));
+  return Math.max(0, totalEarnedTimeCoins(sessions) + wallet.bonusCoins - totalSpentTimeCoins(wallet));
 }
 
 export function buyStreakGuard(sessions, wallet, now) {
@@ -73,7 +75,8 @@ export function buyStreakGuard(sessions, wallet, now) {
     wallet: {
       heldGuards: wallet.heldGuards + 1,
       coveredDayStarts: wallet.coveredDayStarts.slice(),
-      spends: nextSpends
+      spends: nextSpends,
+      bonusCoins: wallet.bonusCoins
     },
     message: '已兑换 1 张节奏保护券'
   };

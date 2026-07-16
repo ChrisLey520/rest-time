@@ -93,7 +93,17 @@ assert.equal(twoGuards.guardsConsumed, 2);
 assert.deepEqual(twoGuards.coveredIndexes, [2, 3]);
 
 // normalizeWallet 兜底旧数据
-assert.deepEqual(normalizeWallet(undefined), { heldGuards: 0, coveredDayStarts: [], spends: [] });
+assert.deepEqual(normalizeWallet(undefined), { heldGuards: 0, coveredDayStarts: [], spends: [], bonusCoins: 0 });
 assert.equal(normalizeWallet({ heldGuards: 1.9 }).heldGuards, 1);
+assert.equal(normalizeWallet({ heldGuards: 1 }).bonusCoins, 0);
+
+// bonusCoins 计入余额(调试/运营补发)
+const bonusWallet = { heldGuards: 0, coveredDayStarts: [], spends: [], bonusCoins: 10000 };
+assert.equal(timeCoinBalance([], bonusWallet), 10000);
+assert.equal(timeCoinBalance(sessions, bonusWallet), 10150);
+const bonusBuy = buyStreakGuard([], bonusWallet, now);
+assert.equal(bonusBuy.ok, true);
+assert.equal(bonusBuy.wallet.bonusCoins, 10000);
+assert.equal(timeCoinBalance([], bonusBuy.wallet), 10000 - STREAK_GUARD_PRICE);
 
 console.log('streak guard core tests passed');

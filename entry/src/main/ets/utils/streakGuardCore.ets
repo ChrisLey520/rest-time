@@ -15,13 +15,16 @@ export interface StreakGuardWallet {
   heldGuards: number;
   coveredDayStarts: number[];
   spends: CoinSpend[];
+  // 调试/运营补发的时光币，计入余额；正式发放仍走 session 的 timeCoinsEarned。
+  bonusCoins: number;
 }
 
 export function createEmptyWallet(): StreakGuardWallet {
   return {
     heldGuards: 0,
     coveredDayStarts: [],
-    spends: []
+    spends: [],
+    bonusCoins: 0
   };
 }
 
@@ -33,7 +36,8 @@ export function normalizeWallet(wallet?: StreakGuardWallet): StreakGuardWallet {
   return {
     heldGuards: Math.max(0, Math.floor(wallet.heldGuards ? wallet.heldGuards : 0)),
     coveredDayStarts: wallet.coveredDayStarts ? wallet.coveredDayStarts : [],
-    spends: wallet.spends ? wallet.spends : []
+    spends: wallet.spends ? wallet.spends : [],
+    bonusCoins: Math.max(0, Math.floor(wallet.bonusCoins ? wallet.bonusCoins : 0))
   };
 }
 
@@ -56,7 +60,7 @@ export function totalSpentTimeCoins(wallet: StreakGuardWallet): number {
 }
 
 export function timeCoinBalance(sessions: FocusSession[], wallet: StreakGuardWallet): number {
-  return Math.max(0, totalEarnedTimeCoins(sessions) - totalSpentTimeCoins(wallet));
+  return Math.max(0, totalEarnedTimeCoins(sessions) + wallet.bonusCoins - totalSpentTimeCoins(wallet));
 }
 
 export interface BuyStreakGuardResult {
@@ -99,7 +103,8 @@ export function buyStreakGuard(
     wallet: {
       heldGuards: wallet.heldGuards + 1,
       coveredDayStarts: wallet.coveredDayStarts.slice(),
-      spends: nextSpends
+      spends: nextSpends,
+      bonusCoins: wallet.bonusCoins
     },
     message: '已兑换 1 张节奏保护券'
   };

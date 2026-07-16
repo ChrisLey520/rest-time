@@ -244,7 +244,8 @@ export function unlockFocusTheme(
     wallet: {
       heldGuards: wallet.heldGuards,
       coveredDayStarts: wallet.coveredDayStarts.slice(),
-      spends: nextSpends
+      spends: nextSpends,
+      bonusCoins: wallet.bonusCoins
     },
     message: `已解锁「${theme.title}」`
   };

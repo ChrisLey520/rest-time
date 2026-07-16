@@ -73,7 +73,8 @@ export class StreakGuardService {
       const nextWallet: StreakGuardWallet = {
         heldGuards: Math.max(0, wallet.heldGuards - result.guardsConsumed),
         coveredDayStarts: nextCovered,
-        spends: wallet.spends
+        spends: wallet.spends,
+        bonusCoins: wallet.bonusCoins
       };
       await StorageService.saveStreakGuardWallet(nextWallet);
       return {
@@ -104,5 +105,23 @@ export class StreakGuardService {
       message: result.message,
       snapshot
     };
+  }
+
+  /** 开发调试：把时光币余额补到目标值（只加不减，正式发放不受影响）。 */
+  static async debugTopUpBalance(targetBalance: number): Promise<StreakGuardSnapshot> {
+    const sessions = await SessionService.listAll();
+    const wallet = await StorageService.getStreakGuardWallet();
+    const currentBalance = timeCoinBalance(sessions, wallet);
+    if (currentBalance < targetBalance) {
+      const nextWallet: StreakGuardWallet = {
+        heldGuards: wallet.heldGuards,
+        coveredDayStarts: wallet.coveredDayStarts,
+        spends: wallet.spends,
+        bonusCoins: wallet.bonusCoins + (targetBalance - currentBalance)
+      };
+      await StorageService.saveStreakGuardWallet(nextWallet);
+    }
+
+    return StreakGuardService.getSnapshot();
   }
 }

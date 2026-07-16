@@ -199,7 +199,8 @@ export function unlockFocusEffect(
     wallet: {
       heldGuards: wallet.heldGuards,
       coveredDayStarts: wallet.coveredDayStarts.slice(),
-      spends: nextSpends
+      spends: nextSpends,
+      bonusCoins: wallet.bonusCoins
     },
     message: `已解锁「${effect.title}」`
   };

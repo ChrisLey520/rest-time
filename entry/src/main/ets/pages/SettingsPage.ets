@@ -3,6 +3,7 @@ import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig'
 import { ErrorLogEntry, ErrorLogService, errorSourceLabel } from '../services/ErrorLogService';
 import { EffectListItem, FocusThemeService, ThemeListItem, ThemeStoreSnapshot } from '../services/FocusThemeService';
 import { PRO_FEATURES, ProFeatureInfo, ProService, ProSnapshot } from '../services/ProService';
+import { StreakGuardService } from '../services/StreakGuardService';
 import { PromptService } from '../services/PromptService';
 import { ReminderService } from '../services/ReminderService';
 import { StorageService } from '../services/StorageService';
@@ -91,6 +92,12 @@ export struct SettingsPage {
     const outcome = await FocusThemeService.selectEffect(effectId);
     this.themeSnapshot = outcome.snapshot;
     PromptService.showToast(outcome.message);
+  }
+
+  private async debugTopUpCoins(): Promise<void> {
+    await StreakGuardService.debugTopUpBalance(10000);
+    this.themeSnapshot = await FocusThemeService.getSnapshot();
+    PromptService.showToast(`时光币余额已补到 ${this.themeSnapshot.coinBalance}`);
   }
 
   private async loadErrorLogs(): Promise<void> {
@@ -496,6 +503,19 @@ export struct SettingsPage {
               .padding({ left: 10, right: 10, top: 5, bottom: 5 })
               .backgroundColor('#EAF2F8')
               .borderRadius(11);
+
+            if (this.config.debugQuickFocusEnabled) {
+              Button('补到 1 万')
+                .height(28)
+                .fontSize(11)
+                .fontColor('#C96F5D')
+                .backgroundColor('#FFF8F6')
+                .borderRadius(10)
+                .margin({ left: 8 })
+                .onClick(() => {
+                  this.debugTopUpCoins();
+                });
+            }
           }
           .width('100%')
           .alignItems(VerticalAlign.Center);
