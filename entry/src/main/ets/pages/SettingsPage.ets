@@ -586,7 +586,7 @@ export struct SettingsPage {
             }
             .width('100%')
             .alignItems(VerticalAlign.Center);
-          }, (item: ThemeListItem) => item.theme.id);
+          }, (item: ThemeListItem) => `${item.theme.id}_${item.unlocked}_${item.selected}`);
 
           Text('氛围只改变专注进行中的配色，完成后回到日常界面。')
             .fontSize(11)
@@ -656,7 +656,7 @@ export struct SettingsPage {
             }
             .width('100%')
             .alignItems(VerticalAlign.Center);
-          }, (item: EffectListItem) => item.effect.id);
+          }, (item: EffectListItem) => `${item.effect.id}_${item.unlocked}_${item.selected}`);
 
           Text('动效在每段专注完成时播放一次。')
             .fontSize(11)
