@@ -138,15 +138,27 @@ export function createReviewStats(sessions, now) {
   });
 
   let currentStreakDays = 0;
-  for (let offset = 0; offset > -365; offset -= 1) {
+  let lastRestOffset = 1;
+  const todayFocusSeconds = sumFocusSeconds(completedSessionsInRange(sessions, startOfDayMs(now, 0), now + 1));
+  if (todayFocusSeconds > 0) {
+    currentStreakDays += 1;
+  }
+
+  for (let offset = -1; offset > -365; offset -= 1) {
     const startAt = startOfDayMs(now, offset);
-    const endAt = offset < 0 ? startOfDayMs(now, offset + 1) : now + 1;
+    const endAt = startOfDayMs(now, offset + 1);
     const dayFocusSeconds = sumFocusSeconds(completedSessionsInRange(sessions, startAt, endAt));
-    if (dayFocusSeconds <= 0) {
-      break;
+    if (dayFocusSeconds > 0) {
+      currentStreakDays += 1;
+      continue;
     }
 
-    currentStreakDays += 1;
+    if (lastRestOffset > 0 || lastRestOffset - offset >= 7) {
+      lastRestOffset = offset;
+      continue;
+    }
+
+    break;
   }
 
   return {

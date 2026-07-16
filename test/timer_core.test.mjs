@@ -1202,7 +1202,7 @@ function advancePresent(nowRef, timer, milliseconds) {
   advancePresent(nowRef, timer, (29 * 60 + 59) * 1000);
   timer.restore();
   assert.equal(storage.sessions[0].status, 'completed');
-  assert.equal(storage.sessions[0].timeCoinsEarned || 0, 0);
+  assert.equal(storage.sessions[0].timeCoinsEarned || 0, 29); // 加速档前按分钟计币
   storage.timerState = {
     id: '',
     mode: 'focus',
@@ -1226,7 +1226,7 @@ function advancePresent(nowRef, timer, milliseconds) {
   timer.startFocus(45 * 60, 'task_1', '深度工作', '工作');
   advancePresent(nowRef, timer, 45 * 60_000);
   timer.restore();
-  assert.equal(storage.sessions[0].timeCoinsEarned, 45);
+  assert.equal(storage.sessions[0].timeCoinsEarned, 60); // 30 币起,每 5 分钟 +10
 }
 
 {

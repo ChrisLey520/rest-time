@@ -332,7 +332,7 @@ export struct RecordPage {
     }
 
     if (this.reviewStats.currentStreakDays >= 3) {
-      return '连续性正在形成';
+      return '节奏正在形成';
     }
 
     return '还有一段就更完整';
@@ -340,7 +340,7 @@ export struct RecordPage {
 
   private reviewSummaryDescription(): string {
     if (this.sessions.length === 0) {
-      return '复盘会根据完成率、连续天数和高效时段给出下一步建议。';
+      return '复盘会根据完成率、专注节奏和高效时段给出下一步建议。节奏比连续更重要，每 7 天允许 1 个休息日。';
     }
 
     if (this.goalStats.isCompleted) {
@@ -872,7 +872,7 @@ export struct RecordPage {
                   .fontSize(18)
                   .fontWeight(FontWeight.Medium)
                   .fontColor('#4D7EA8');
-                Text('连续专注')
+                Text('专注节奏')
                   .fontSize(11)
                   .fontColor('#7B8785');
               }

@@ -1,3 +1,5 @@
+export const ABSENCE_THRESHOLD_DAYS = 2;
+
 function recentSessions(sessions, limit) {
   return sessions
     .slice()
@@ -11,6 +13,18 @@ function hasRecentAway(session) {
 
 function planText(durationSeconds, riskLevel, reason) {
   const minutes = Math.max(1, Math.floor(durationSeconds / 60));
+  if (reason === 'long_absence') {
+    return {
+      durationSeconds,
+      riskLevel,
+      reason,
+      headline: `${minutes} 分钟回归启动`,
+      description: '回来了就好。不用补上错过的天数，先用一小段找回手感，今天只要这一段就算赢。',
+      guardLabel: '欢迎回来',
+      absenceDays: 0
+    };
+  }
+
   if (riskLevel === 'high') {
     return {
       durationSeconds,
@@ -18,7 +32,8 @@ function planText(durationSeconds, riskLevel, reason) {
       reason,
       headline: `${minutes} 分钟保底启动`,
       description: '最近中断偏多，先别硬扛完整专注。只要求把任务摸到手里，完成后再接正常段。',
-      guardLabel: '高风险'
+      guardLabel: '高风险',
+      absenceDays: 0
     };
   }
 
@@ -31,7 +46,8 @@ function planText(durationSeconds, riskLevel, reason) {
       description: reason === 'recent_away'
         ? '最近有离场记录，先用短段确认自己真的回来了，再进入完整专注。'
         : '最近完成不够稳，先做一段更容易完成的启动段。',
-      guardLabel: '易分心'
+      guardLabel: '易分心',
+      absenceDays: 0
     };
   }
 
@@ -41,15 +57,48 @@ function planText(durationSeconds, riskLevel, reason) {
     reason,
     headline: '标准专注启动',
     description: '当前节奏稳定，可以直接开始默认专注时长。',
-    guardLabel: '稳定'
+    guardLabel: '稳定',
+    absenceDays: 0
   };
 }
 
-export function createStarterPlan(sessions, defaultFocusMinutes) {
+function daysBetween(earlier, later) {
+  const earlierDay = new Date(earlier);
+  earlierDay.setHours(0, 0, 0, 0);
+  const laterDay = new Date(later);
+  laterDay.setHours(0, 0, 0, 0);
+  return Math.round((laterDay.getTime() - earlierDay.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+export function absenceDaysSinceLastSession(sessions, now) {
+  if (sessions.length === 0) {
+    return 0;
+  }
+
+  let lastEndedAt = 0;
+  sessions.forEach((session) => {
+    if (session.endedAt > lastEndedAt) {
+      lastEndedAt = session.endedAt;
+    }
+  });
+
+  return Math.max(0, daysBetween(lastEndedAt, now));
+}
+
+export function createStarterPlan(sessions, defaultFocusMinutes, now = 0) {
   const defaultDurationSeconds = Math.max(1, Math.floor(defaultFocusMinutes)) * 60;
   const recent = recentSessions(sessions, 7);
   if (recent.length === 0) {
     return planText(defaultDurationSeconds, 'low', 'fresh_start');
+  }
+
+  if (now > 0) {
+    const absenceDays = absenceDaysSinceLastSession(sessions, now);
+    if (absenceDays >= ABSENCE_THRESHOLD_DAYS) {
+      const plan = planText(Math.min(defaultDurationSeconds, 5 * 60), 'high', 'long_absence');
+      plan.absenceDays = absenceDays;
+      return plan;
+    }
   }
 
   const abandonedCount = recent.filter((session) => session.status === 'abandoned').length;

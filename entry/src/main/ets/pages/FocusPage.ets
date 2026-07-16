@@ -72,7 +72,8 @@ export struct FocusPage {
     reason: 'fresh_start',
     headline: '标准专注启动',
     description: '当前节奏稳定，可以直接开始默认专注时长。',
-    guardLabel: '稳定'
+    guardLabel: '稳定',
+    absenceDays: 0
   };
   @State config: PomodoroConfig = {
     focusMinutes: 25,
@@ -816,6 +817,10 @@ export struct FocusPage {
   }
 
   private starterPlanAccentColor(): string {
+    if (this.starterPlan.reason === 'long_absence') {
+      return '#5F9E8A';
+    }
+
     if (this.starterPlan.riskLevel === 'high') {
       return '#C96F5D';
     }
@@ -828,6 +833,10 @@ export struct FocusPage {
   }
 
   private starterPlanCardBgColor(): string {
+    if (this.starterPlan.reason === 'long_absence') {
+      return '#EAF3F0';
+    }
+
     if (this.starterPlan.riskLevel === 'high') {
       return '#FFF8F6';
     }
@@ -1240,7 +1249,7 @@ export struct FocusPage {
               .fontSize(13)
               .fontColor('#4D7EA8')
               .layoutWeight(1);
-            Text('30 分钟完整专注起奖')
+            Text('完整守住就有奖励，越长越多')
               .fontSize(12)
               .fontColor('#7B8785');
           }
@@ -1404,6 +1413,13 @@ export struct FocusPage {
                     .fontSize(13)
                     .fontColor('#7B8785')
                     .width('100%');
+
+                  if (this.starterPlan.reason === 'long_absence') {
+                    Text('节奏比连续更重要，上次的记录都还在。')
+                      .fontSize(11)
+                      .fontColor('#5F9E8A')
+                      .width('100%');
+                  }
                 }
                 .width('100%')
                 .padding(14)

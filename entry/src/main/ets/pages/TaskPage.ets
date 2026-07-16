@@ -63,7 +63,8 @@ export struct TaskPage {
     reason: 'fresh_start',
     headline: '标准专注启动',
     description: '当前节奏稳定，可以直接开始默认专注时长。',
-    guardLabel: '稳定'
+    guardLabel: '稳定',
+    absenceDays: 0
   };
   private ticker: number = -1;
 

@@ -200,16 +200,32 @@ export function createReviewStats(sessions: FocusSession[], now: number): Review
     }
   });
 
+  // 弹性节奏：连续天数不搞「断一天清零」的审判。
+  // 规则一：今天还没专注不算断——这一天还没结束。
+  // 规则二：每 7 天允许 1 个休息日，休息日不加天数但也不断连。
   let currentStreakDays = 0;
-  for (let offset = 0; offset > -365; offset -= 1) {
+  let lastRestOffset = 1; // 尚未使用休息日
+  const todayFocusSeconds = sumFocusSeconds(completedSessionsInRange(sessions, startOfDayMs(now, 0), now + 1));
+  if (todayFocusSeconds > 0) {
+    currentStreakDays += 1;
+  }
+
+  for (let offset = -1; offset > -365; offset -= 1) {
     const startAt = startOfDayMs(now, offset);
-    const endAt = offset < 0 ? startOfDayMs(now, offset + 1) : now + 1;
+    const endAt = startOfDayMs(now, offset + 1);
     const dayFocusSeconds = sumFocusSeconds(completedSessionsInRange(sessions, startAt, endAt));
-    if (dayFocusSeconds <= 0) {
-      break;
+    if (dayFocusSeconds > 0) {
+      currentStreakDays += 1;
+      continue;
     }
 
-    currentStreakDays += 1;
+    // 空白日：7 天内没用过休息日就消耗一次，否则节奏中断。
+    if (lastRestOffset > 0 || lastRestOffset - offset >= 7) {
+      lastRestOffset = offset;
+      continue;
+    }
+
+    break;
   }
 
   return {

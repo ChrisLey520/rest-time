@@ -120,6 +120,32 @@ assert.equal(reviewStats.bestFocusHourFocusSeconds, (90 + 120) * 60);
 assert.equal(reviewStats.averageCompletedFocusSeconds, Math.round((25 + 35 + 90 + 120) * 60 / 5));
 assert.equal(reviewStats.completionRatePercent, Math.round(5 * 100 / 6));
 
+// ---- 弹性节奏 streak ----
+const streakSession = (dayOffset, minutes = 30) => ({
+  id: `streak_${dayOffset}_${minutes}`,
+  actualDurationSeconds: minutes * 60,
+  endedAt: todayStart + dayOffset * oneDay + 12 * 60 * 60 * 1000,
+  status: 'completed'
+});
+
+// 今天还没专注不算断:昨天+前天有记录,今天空白 → 保持 2 天
+assert.equal(createReviewStats([streakSession(-1), streakSession(-2)], now).currentStreakDays, 2);
+
+// 中间断 1 天用掉休息日,节奏不断:今天空白(今天不算断),-1 空白(消耗休息日),-2、-3 有记录
+assert.equal(createReviewStats([streakSession(-2), streakSession(-3)], now).currentStreakDays, 2);
+
+// 7 天内断第 2 天,节奏中断:-1 休息、-2 有、-3 空白(休息日已用) → 只算到 -2
+assert.equal(createReviewStats([streakSession(-2), streakSession(-4)], now).currentStreakDays, 1);
+
+// 跨 7 天可再次休息:-1 休息,-2..-7 连续 6 天,-8 空白(距上次休息 ≥7 天)再休,-9 有记录
+assert.equal(createReviewStats([
+  streakSession(-2), streakSession(-3), streakSession(-4), streakSession(-5),
+  streakSession(-6), streakSession(-7), streakSession(-9)
+], now).currentStreakDays, 7);
+
+// 完全无记录 → 0
+assert.equal(createReviewStats([], now).currentStreakDays, 0);
+
 const monthlyStats = createMonthlyStats(sessions, now);
 assert.equal(monthlyStats.monthLabel, '2026年6月');
 assert.equal(monthlyStats.totalFocusSeconds, (25 + 35 + 90 + 120) * 60);
