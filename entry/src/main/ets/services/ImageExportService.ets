@@ -1,7 +1,7 @@
-import componentSnapshot from '@ohos.arkui.componentSnapshot';
-import image from '@ohos.multimedia.image';
 import fs from '@ohos.file.fs';
+import image from '@ohos.multimedia.image';
 import picker from '@ohos.file.picker';
+import { UIContext } from '@ohos.arkui.UIContext';
 import { ErrorLogService } from './ErrorLogService';
 
 export interface ImageExportResult {
@@ -12,12 +12,16 @@ export interface ImageExportResult {
 export class ImageExportService {
   /**
    * 截取指定组件 id 的渲染快照，打包为 PNG 并通过系统文件选择器保存。
-   * 组件必须在当前窗口内可见（componentSnapshot.get 的系统约束）。
+   * 组件必须在当前窗口内可见（componentSnapshot 的系统约束）。
    */
-  static async saveComponentAsPng(componentId: string, fileName: string): Promise<ImageExportResult> {
+  static async saveComponentAsPng(
+    uiContext: UIContext,
+    componentId: string,
+    fileName: string
+  ): Promise<ImageExportResult> {
     let pixelMap: image.PixelMap | undefined = undefined;
     try {
-      pixelMap = await componentSnapshot.get(componentId);
+      pixelMap = await uiContext.getComponentSnapshot().get(componentId);
     } catch (error) {
       await ErrorLogService.record('export', `组件截图失败：${error instanceof Error ? error.message : error}`);
       return { saved: false, message: '生成图片失败，请回到页面顶部后重试' };
@@ -26,6 +30,8 @@ export class ImageExportService {
     let packedBuffer: ArrayBuffer;
     const imagePacker = image.createImagePacker();
     try {
+      // packing 在新 SDK 标记为 deprecated（API 13 起推荐 packToData），
+      // 但 compatibleSdkVersion 12 下 packing 仍是唯一可用的稳定接口。
       packedBuffer = await imagePacker.packing(pixelMap, {
         format: 'image/png',
         quality: 100
@@ -38,13 +44,13 @@ export class ImageExportService {
       await pixelMap.release();
     }
 
-    const saveOptions = new picker.PhotoSaveOptions();
+    const saveOptions = new picker.DocumentSaveOptions();
     saveOptions.newFileNames = [fileName];
 
     let uris: string[] = [];
     try {
-      const photoPicker = new picker.PhotoViewPicker();
-      uris = await photoPicker.save(saveOptions);
+      const documentPicker = new picker.DocumentViewPicker();
+      uris = await documentPicker.save(saveOptions);
     } catch (error) {
       await ErrorLogService.record('export', `图片保存选择器打开失败：${error instanceof Error ? error.message : error}`);
       return { saved: false, message: '未完成保存，可稍后再试' };
@@ -63,6 +69,6 @@ export class ImageExportService {
       return { saved: false, message: '保存失败，请检查存储空间' };
     }
 
-    return { saved: true, message: '报告长图已保存到相册' };
+    return { saved: true, message: '报告长图已保存' };
   }
 }

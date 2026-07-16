@@ -1419,7 +1419,7 @@ export struct TaskPage {
               });
 
             if (this.projectSuggestions.length > 0) {
-              Flex({ wrap: FlexWrap.Wrap, space: { main: { value: 8, unit: LengthUnit.VP }, cross: { value: 8, unit: LengthUnit.VP } } }) {
+              Flex({ wrap: FlexWrap.Wrap }) {
                 ForEach(this.projectSuggestions, (name: string) => {
                   Row({ space: 5 }) {
                     Circle({ width: 7, height: 7 })
@@ -1431,6 +1431,7 @@ export struct TaskPage {
                   .padding({ left: 10, right: 10, top: 5, bottom: 5 })
                   .backgroundColor(this.draftProjectName === name ? '#4D7EA8' : '#EAF2F8')
                   .borderRadius(11)
+                  .margin({ right: 8, bottom: 8 })
                   .onClick(() => {
                     this.draftProjectName = name;
                   });
@@ -1677,7 +1678,7 @@ export struct TaskPage {
                     });
 
                   if (this.projectSuggestions.length > 0) {
-                    Flex({ wrap: FlexWrap.Wrap, space: { main: { value: 8, unit: LengthUnit.VP }, cross: { value: 8, unit: LengthUnit.VP } } }) {
+                    Flex({ wrap: FlexWrap.Wrap }) {
                       ForEach(this.projectSuggestions, (name: string) => {
                         Row({ space: 5 }) {
                           Circle({ width: 7, height: 7 })
@@ -1689,6 +1690,7 @@ export struct TaskPage {
                         .padding({ left: 10, right: 10, top: 5, bottom: 5 })
                         .backgroundColor(this.editProjectName === name ? '#4D7EA8' : '#EAF2F8')
                         .borderRadius(11)
+                        .margin({ right: 8, bottom: 8 })
                         .onClick(() => {
                           this.editProjectName = name;
                         });

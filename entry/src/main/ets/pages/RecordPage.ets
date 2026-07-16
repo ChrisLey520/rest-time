@@ -469,7 +469,7 @@ export struct RecordPage {
 
   private async saveReportImage(): Promise<void> {
     const fileName = createReportImageFileName(this.monthlyReport.exportTitle);
-    const result = await ImageExportService.saveComponentAsPng(MONTHLY_REPORT_CARD_ID, fileName);
+    const result = await ImageExportService.saveComponentAsPng(this.getUIContext(), MONTHLY_REPORT_CARD_ID, fileName);
     PromptService.showToast(result.message);
   }
 

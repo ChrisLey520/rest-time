@@ -1,7 +1,7 @@
 import { BillingSettings, BillingService, defaultBillingSettings } from '../services/BillingService';
 import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig';
 import { ErrorLogEntry, ErrorLogService, errorSourceLabel } from '../services/ErrorLogService';
-import { PRO_FEATURES, ProService } from '../services/ProService';
+import { PRO_FEATURES, ProFeatureInfo, ProService } from '../services/ProService';
 import { PromptService } from '../services/PromptService';
 import { ReminderService } from '../services/ReminderService';
 import { StorageService } from '../services/StorageService';
@@ -381,7 +381,7 @@ export struct SettingsPage {
           .width('100%')
           .alignItems(VerticalAlign.Center);
 
-          ForEach(PRO_FEATURES, (feature: { feature: string; title: string; description: string }) => {
+          ForEach(PRO_FEATURES, (feature: ProFeatureInfo) => {
             Row({ space: 12 }) {
               Text('✓')
                 .fontSize(14)
@@ -402,7 +402,7 @@ export struct SettingsPage {
             }
             .width('100%')
             .alignItems(VerticalAlign.Top);
-          }, (feature: { feature: string }) => feature.feature);
+          }, (feature: ProFeatureInfo) => feature.feature);
 
           if (!ProService.isPro()) {
             Button('了解高级版')
