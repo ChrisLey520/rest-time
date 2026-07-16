@@ -1,7 +1,7 @@
 import { FocusSession } from '../models/FocusSession';
+import { StarterPlanReason, StarterPlanRiskLevel } from '../models/TimerState';
 
-export type StarterPlanRiskLevel = 'low' | 'medium' | 'high';
-export type StarterPlanReason = 'fresh_start' | 'recent_abandon' | 'recent_away' | 'low_completion' | 'long_absence';
+export { StarterPlanReason, StarterPlanRiskLevel };
 
 export const ABSENCE_THRESHOLD_DAYS = 2;
 
