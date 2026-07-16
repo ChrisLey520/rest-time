@@ -30,7 +30,8 @@ export const PRO_FEATURES: ProFeatureInfo[] = [
 ];
 
 export class ProService {
-  // 本地占位：当前始终为 Free，后续接入订阅后替换此处。
+  // 体验期策略：Pro 能力全部免费开放，isPro() 仅区分"是否已订阅"的展示态。
+  // 订阅上线后接入 IAP 查询替换此处，并在各能力入口用 isPro() 做锁定判断。
   static isPro(): boolean {
     return false;
   }

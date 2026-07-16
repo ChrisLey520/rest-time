@@ -344,10 +344,6 @@ export struct SettingsPage {
     }
   }
 
-  private showPremiumToast(): void {
-    PromptService.showToast('高级版能力将在商业化版本开放');
-  }
-
   build() {
     Scroll() {
       Column({ space: 18 }) {
@@ -364,18 +360,18 @@ export struct SettingsPage {
                 .fontSize(20)
                 .fontWeight(FontWeight.Bold)
                 .fontColor('#1F2A2A');
-              Text(ProService.isPro() ? '已订阅 · 全部能力已解锁' : '免费版 · 以下能力在稳定记录后解锁')
+              Text(ProService.isPro() ? '已订阅 · 全部能力已解锁' : '体验期 · 以下能力当前全部免费开放')
                 .fontSize(13)
-                .fontColor(ProService.isPro() ? '#5F9E8A' : '#7B8785');
+                .fontColor('#5F9E8A');
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1);
 
-            Text(ProService.isPro() ? 'Pro' : '免费版')
+            Text(ProService.isPro() ? 'Pro' : '体验期')
               .fontSize(12)
-              .fontColor(ProService.isPro() ? '#FFFFFF' : '#4D7EA8')
+              .fontColor('#FFFFFF')
               .padding({ left: 10, right: 10, top: 5, bottom: 5 })
-              .backgroundColor(ProService.isPro() ? '#5F9E8A' : '#EAF2F8')
+              .backgroundColor('#5F9E8A')
               .borderRadius(11);
           }
           .width('100%')
@@ -405,16 +401,13 @@ export struct SettingsPage {
           }, (feature: ProFeatureInfo) => feature.feature);
 
           if (!ProService.isPro()) {
-            Button('了解高级版')
-              .height(42)
+            Text('订阅上线后，已有的记录和导出不受影响；体验期产生的数据始终保留在你的设备本地。')
+              .fontSize(11)
+              .fontColor('#7B8785')
               .width('100%')
-              .fontSize(14)
-              .fontColor('#FFFFFF')
-              .backgroundColor('#4D7EA8')
-              .borderRadius(14)
-              .onClick(() => {
-                this.showPremiumToast();
-              });
+              .padding(10)
+              .backgroundColor('#F6F8F7')
+              .borderRadius(12);
           }
         }
         .width('100%')

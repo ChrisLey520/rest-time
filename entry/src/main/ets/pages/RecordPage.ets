@@ -1083,7 +1083,7 @@ export struct RecordPage {
               .alignItems(HorizontalAlign.Start)
               .layoutWeight(1);
 
-              Text('Pro 原型')
+              Text('体验期免费')
                 .fontSize(12)
                 .fontColor('#4D7EA8')
                 .padding({ left: 10, right: 10, top: 5, bottom: 5 })
@@ -1248,7 +1248,7 @@ export struct RecordPage {
               .alignItems(HorizontalAlign.Start)
               .layoutWeight(1);
 
-              Text('Pro 原型')
+              Text('体验期免费')
                 .fontSize(12)
                 .fontColor('#5F9E8A')
                 .padding({ left: 10, right: 10, top: 5, bottom: 5 })
