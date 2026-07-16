@@ -4,16 +4,22 @@ import { createEmptyWallet, timeCoinBalance } from './helpers/streakGuardCore.mj
 
 const now = Date.parse('2026-07-15T10:00:00');
 
-// 主题定义:12 个主题,默认免费,付费主题定价 300-1000
-assert.equal(FOCUS_THEMES.length, 12);
+// 主题定义:15 个主题,默认免费,付费主题定价 300-2000
+assert.equal(FOCUS_THEMES.length, 15);
 assert.equal(FOCUS_THEMES[0].price, 0);
 assert.deepEqual(
   FOCUS_THEMES.map((theme) => theme.price),
-  [0, 300, 400, 500, 350, 450, 600, 800, 380, 520, 560, 1000]
+  [0, 300, 400, 500, 350, 450, 600, 800, 380, 520, 560, 1000, 1200, 1500, 2000]
 );
 
 // id 唯一
 assert.equal(new Set(FOCUS_THEMES.map((theme) => theme.id)).size, FOCUS_THEMES.length);
+
+// 典藏级主题带数字辉光,普通主题没有
+assert.ok(findFocusTheme('obsidian_gold').timerGlowColor);
+assert.ok(findFocusTheme('aurora_night').timerGlowColor);
+assert.ok(findFocusTheme('crimson_lacquer').timerGlowColor);
+assert.equal(findFocusTheme('dusk').timerGlowColor, undefined);
 
 // findFocusTheme:未知 id 回退默认
 assert.equal(findFocusTheme('dusk').title, '暮色');

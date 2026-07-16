@@ -1362,7 +1362,8 @@ export struct FocusPage {
 
           TimerDisplay({
             remainingSeconds: this.remainingSeconds,
-            timerColor: this.isFocusRunning() ? this.focusTheme.timerColor : '#1F2A2A'
+            timerColor: this.isFocusRunning() ? this.focusTheme.timerColor : '#1F2A2A',
+            glowColor: this.isFocusRunning() && this.focusTheme.timerGlowColor ? this.focusTheme.timerGlowColor : ''
           });
 
           if (this.timerState.status === 'idle' && this.timerState.mode === 'focus') {

@@ -120,6 +120,39 @@ export const FOCUS_THEMES = [
     cardColor: '#182230',
     timerColor: '#C8D8E8',
     accentColor: '#4D7EA8'
+  },
+  {
+    id: 'obsidian_gold',
+    title: '鎏金墨',
+    subtitle: '黑曜石上描一线暗金，数字带一层微光——典藏',
+    price: 1200,
+    backgroundColor: '#121110',
+    cardColor: '#1C1A17',
+    timerColor: '#E8D9B0',
+    accentColor: '#C9A961',
+    timerGlowColor: '#C9A96140'
+  },
+  {
+    id: 'aurora_night',
+    title: '夜极光',
+    subtitle: '极圈夜空的青绿光帘，数字如冰下透光——典藏',
+    price: 1500,
+    backgroundColor: '#0D1A1E',
+    cardColor: '#14262B',
+    timerColor: '#B8F0DC',
+    accentColor: '#4FD6A3',
+    timerGlowColor: '#4FD6A33A'
+  },
+  {
+    id: 'crimson_lacquer',
+    title: '朱漆',
+    subtitle: '大漆退光后的深绯，落金般的计时数字——镇馆',
+    price: 2000,
+    backgroundColor: '#1C0F0E',
+    cardColor: '#2A1614',
+    timerColor: '#F2D8A8',
+    accentColor: '#C4453C',
+    timerGlowColor: '#C4453C33'
   }
 ];
 

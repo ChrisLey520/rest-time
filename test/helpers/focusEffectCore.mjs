@@ -90,6 +90,39 @@ export const FOCUS_EFFECTS = [
     ringColors: ['#C96F5D', '#B08954', '#7FA05F', '#5E9CA8', '#8A7FB4'],
     symbol: '✺',
     durationMs: 1800
+  },
+  {
+    id: 'gilt_thread',
+    title: '鎏金',
+    subtitle: '暗金三环带光晕，二段波纹如金箔沉落——典藏',
+    price: 1000,
+    ringColors: ['#8A6D3B', '#C9A961', '#EFD9A7'],
+    symbol: '❖',
+    durationMs: 1800,
+    haloColor: '#C9A96126',
+    waves: 2
+  },
+  {
+    id: 'polar_night',
+    title: '极夜',
+    subtitle: '墨蓝四环托一点极星，光晕如夜空呼吸——典藏',
+    price: 1200,
+    ringColors: ['#1E2A3A', '#2E4258', '#4A6A88', '#9FC2DD'],
+    symbol: '✧',
+    durationMs: 2000,
+    haloColor: '#9FC2DD22',
+    waves: 2
+  },
+  {
+    id: 'glaze',
+    title: '窑变',
+    subtitle: '五层釉色从赤铜到天青，每一次完成都开一窑——镇馆',
+    price: 1500,
+    ringColors: ['#8A4A3A', '#B0764A', '#C9A961', '#7FA0A8', '#5E8CA8'],
+    symbol: '✜',
+    durationMs: 2200,
+    haloColor: '#C9A96130',
+    waves: 2
   }
 ];
 

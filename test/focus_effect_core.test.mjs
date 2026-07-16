@@ -5,19 +5,28 @@ import { createEmptyWallet, timeCoinBalance } from './helpers/streakGuardCore.mj
 
 const now = Date.parse('2026-07-15T10:00:00');
 
-// 动效定义:10 个,默认免费,圆环层数 1-5
-assert.equal(FOCUS_EFFECTS.length, 10);
+// 动效定义:13 个,默认免费,圆环层数 1-5
+assert.equal(FOCUS_EFFECTS.length, 13);
 assert.deepEqual(
   FOCUS_EFFECTS.map((effect) => effect.price),
-  [0, 250, 350, 300, 400, 550, 280, 450, 600, 800]
+  [0, 250, 350, 300, 400, 550, 280, 450, 600, 800, 1000, 1200, 1500]
 );
 assert.deepEqual(
   FOCUS_EFFECTS.map((effect) => effect.ringColors.length),
-  [1, 2, 3, 2, 3, 4, 2, 3, 4, 5]
+  [1, 2, 3, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5]
 );
 
 // id 唯一
 assert.equal(new Set(FOCUS_EFFECTS.map((effect) => effect.id)).size, FOCUS_EFFECTS.length);
+
+// 典藏级动效带光晕和二段波纹,普通动效没有
+assert.ok(findFocusEffect('gilt_thread').haloColor);
+assert.equal(findFocusEffect('gilt_thread').waves, 2);
+assert.ok(findFocusEffect('polar_night').haloColor);
+assert.ok(findFocusEffect('glaze').haloColor);
+assert.equal(findFocusEffect('glaze').waves, 2);
+assert.equal(findFocusEffect('ripple').haloColor, undefined);
+assert.equal(findFocusEffect('zenith').waves, undefined);
 
 // 未知 id 回退默认
 assert.equal(findFocusEffect('stardust').title, '星尘');
