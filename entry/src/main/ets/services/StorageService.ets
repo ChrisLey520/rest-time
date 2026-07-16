@@ -23,6 +23,7 @@ interface StorageKeys {
   errorLogs: string;
   customTemplates: string;
   streakGuardWallet: string;
+  focusThemeId: string;
 }
 
 const STORAGE_KEYS: StorageKeys = {
@@ -36,7 +37,8 @@ const STORAGE_KEYS: StorageKeys = {
   scheduledReminder: 'qishi.scheduledReminder',
   errorLogs: 'qishi.errorLogs',
   customTemplates: 'qishi.customTemplates',
-  streakGuardWallet: 'qishi.streakGuardWallet'
+  streakGuardWallet: 'qishi.streakGuardWallet',
+  focusThemeId: 'qishi.focusThemeId'
 };
 
 export interface PomodoroProgress {
@@ -260,6 +262,14 @@ export class StorageService {
 
   static async saveStreakGuardWallet(wallet: StreakGuardWallet): Promise<void> {
     await StorageService.writeJson<StreakGuardWallet>(STORAGE_KEYS.streakGuardWallet, wallet);
+  }
+
+  static async getFocusThemeId(): Promise<string> {
+    return StorageService.readJson<string>(STORAGE_KEYS.focusThemeId, 'default');
+  }
+
+  static async saveFocusThemeId(themeId: string): Promise<void> {
+    await StorageService.writeJson<string>(STORAGE_KEYS.focusThemeId, themeId);
   }
 
   static async saveBillingSettings(settings: BillingSettings): Promise<void> {

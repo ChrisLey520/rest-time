@@ -1,6 +1,7 @@
 import { BillingSettings, BillingService, defaultBillingSettings } from '../services/BillingService';
 import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig';
 import { ErrorLogEntry, ErrorLogService, errorSourceLabel } from '../services/ErrorLogService';
+import { FocusThemeService, ThemeListItem, ThemeStoreSnapshot } from '../services/FocusThemeService';
 import { PRO_FEATURES, ProFeatureInfo, ProService } from '../services/ProService';
 import { PromptService } from '../services/PromptService';
 import { ReminderService } from '../services/ReminderService';
@@ -25,6 +26,20 @@ export struct SettingsPage {
   @State billingSettings: BillingSettings = defaultBillingSettings;
   @State errorLogs: ErrorLogEntry[] = [];
   @State showErrorLogs: boolean = false;
+  @State themeSnapshot: ThemeStoreSnapshot = {
+    items: [],
+    activeTheme: {
+      id: 'default',
+      title: '晨雾',
+      subtitle: '默认的安静浅色',
+      price: 0,
+      backgroundColor: '#F6F8F7',
+      cardColor: '#FFFFFF',
+      timerColor: '#1F2A2A',
+      accentColor: '#5F9E8A'
+    },
+    coinBalance: 0
+  };
 
   aboutToAppear(): void {
     this.loadConfig();
@@ -33,7 +48,20 @@ export struct SettingsPage {
   private async loadConfig(): Promise<void> {
     this.config = await StorageService.getConfig();
     this.billingSettings = await BillingService.getSettings();
+    this.themeSnapshot = await FocusThemeService.getSnapshot();
     await this.loadErrorLogs();
+  }
+
+  private async unlockTheme(themeId: string): Promise<void> {
+    const outcome = await FocusThemeService.unlockTheme(themeId);
+    this.themeSnapshot = outcome.snapshot;
+    PromptService.showToast(outcome.message);
+  }
+
+  private async selectTheme(themeId: string): Promise<void> {
+    const outcome = await FocusThemeService.selectTheme(themeId);
+    this.themeSnapshot = outcome.snapshot;
+    PromptService.showToast(outcome.message);
   }
 
   private async loadErrorLogs(): Promise<void> {
@@ -409,6 +437,104 @@ export struct SettingsPage {
               .backgroundColor('#F6F8F7')
               .borderRadius(12);
           }
+        }
+        .width('100%')
+        .padding(18)
+        .backgroundColor('#FFFFFF')
+        .borderRadius(18)
+        .border({
+          width: 1,
+          color: '#DDE8EA'
+        });
+
+        Column({ space: 14 }) {
+          Row() {
+            Column({ space: 4 }) {
+              Text('专注氛围')
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#1F2A2A');
+              Text('用时光币解锁专注中的配色')
+                .fontSize(12)
+                .fontColor('#7B8785');
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1);
+
+            Text(`余额 ${this.themeSnapshot.coinBalance}`)
+              .fontSize(12)
+              .fontColor('#4D7EA8')
+              .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+              .backgroundColor('#EAF2F8')
+              .borderRadius(11);
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center);
+
+          ForEach(this.themeSnapshot.items, (item: ThemeListItem) => {
+            Row({ space: 12 }) {
+              Column()
+                .width(34)
+                .height(34)
+                .backgroundColor(item.theme.backgroundColor)
+                .borderRadius(10)
+                .border({
+                  width: 2,
+                  color: item.theme.accentColor
+                });
+
+              Column({ space: 3 }) {
+                Text(item.theme.title)
+                  .fontSize(14)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor('#1F2A2A');
+                Text(item.theme.subtitle)
+                  .fontSize(11)
+                  .fontColor('#7B8785')
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis });
+              }
+              .alignItems(HorizontalAlign.Start)
+              .layoutWeight(1);
+
+              if (item.selected) {
+                Text('使用中')
+                  .fontSize(12)
+                  .fontColor('#5F9E8A')
+                  .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                  .backgroundColor('#EAF3F0')
+                  .borderRadius(11);
+              } else if (item.unlocked) {
+                Button('使用')
+                  .height(32)
+                  .fontSize(12)
+                  .fontColor('#FFFFFF')
+                  .backgroundColor('#5F9E8A')
+                  .borderRadius(11)
+                  .onClick(() => {
+                    this.selectTheme(item.theme.id);
+                  });
+              } else {
+                Button(`${item.theme.price} 币`)
+                  .height(32)
+                  .fontSize(12)
+                  .fontColor(this.themeSnapshot.coinBalance >= item.theme.price ? '#FFFFFF' : '#9AA6A3')
+                  .backgroundColor(this.themeSnapshot.coinBalance >= item.theme.price ? '#4D7EA8' : '#EEF3F2')
+                  .borderRadius(11)
+                  .enabled(this.themeSnapshot.coinBalance >= item.theme.price)
+                  .onClick(() => {
+                    this.unlockTheme(item.theme.id);
+                  });
+              }
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Center);
+          }, (item: ThemeListItem) => item.theme.id);
+
+          Text('氛围只改变专注进行中的配色，完成后回到日常界面。')
+            .fontSize(11)
+            .fontColor('#7B8785')
+            .width('100%');
         }
         .width('100%')
         .padding(18)

@@ -18,6 +18,8 @@ import { PromptService } from '../services/PromptService';
 import { StarterPlan, StarterPlanService } from '../services/StarterPlanService';
 import { WidgetService } from '../services/WidgetService';
 import { formatDuration } from '../utils/dateTime';
+import { FocusTheme, FocusThemeService } from '../services/FocusThemeService';
+import { findFocusTheme } from '../utils/focusThemeCore';
 import { TIME_COIN_DAILY_CAP, earnedTimeCoinsToday } from '../utils/timeCoinCore';
 
 @Component
@@ -89,6 +91,7 @@ export struct FocusPage {
   };
   @State completedFocusRounds: number = 0;
   @State todayTimeCoins: number = 0;
+  @State focusTheme: FocusTheme = findFocusTheme('default');
   private ticker: number = -1;
   private widgetSnapshotKey: string = '';
 
@@ -115,6 +118,7 @@ export struct FocusPage {
     this.planningSnapshot = await PlanningService.getSnapshot(this.activeTasks);
     this.starterPlan = await StarterPlanService.getPlan();
     this.completedFocusRounds = await PomodoroProgressService.getCompletedFocusRounds();
+    this.focusTheme = await FocusThemeService.getActiveTheme();
     await this.refreshWidgetIfChanged();
   }
 
@@ -1042,13 +1046,13 @@ export struct FocusPage {
             Text('栖时')
               .fontSize(28)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#1F2A2A');
+              .fontColor(this.isFocusRunning() ? this.focusTheme.timerColor : '#1F2A2A');
             Text('安放每一个专注时刻')
               .fontSize(14)
-              .fontColor('#7B8785');
+              .fontColor(this.isFocusRunning() ? this.focusTheme.accentColor : '#7B8785');
             Text(`今日 ${Math.floor(this.todayStats.focusSeconds / 60)} 分钟 / ${this.todayStats.completedFocusCount} 次`)
               .fontSize(13)
-              .fontColor('#7B8785');
+              .fontColor(this.isFocusRunning() ? this.focusTheme.accentColor : '#7B8785');
           }
           .alignItems(HorizontalAlign.Start)
           .layoutWeight(1);
@@ -1352,7 +1356,10 @@ export struct FocusPage {
             .width('100%');
           }
 
-          TimerDisplay({ remainingSeconds: this.remainingSeconds });
+          TimerDisplay({
+            remainingSeconds: this.remainingSeconds,
+            timerColor: this.isFocusRunning() ? this.focusTheme.timerColor : '#1F2A2A'
+          });
 
           if (this.timerState.status === 'idle' && this.timerState.mode === 'focus') {
             Column({ space: 10 }) {
@@ -1823,6 +1830,6 @@ export struct FocusPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F6F8F7');
+    .backgroundColor(this.isFocusRunning() ? this.focusTheme.backgroundColor : '#F6F8F7');
   }
 }
