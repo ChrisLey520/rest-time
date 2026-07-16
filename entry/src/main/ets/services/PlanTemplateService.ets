@@ -1,10 +1,15 @@
 import {
+  addCustomTemplate,
+  createCustomTemplate,
   findPlanTemplate,
+  mergeTemplates,
   PlanTemplate,
   PlanTemplateId,
   PlanTemplateTaskDraft,
-  planTemplates
+  planTemplates,
+  removeCustomTemplate
 } from '../utils/planTemplateCore';
+import { StorageService } from './StorageService';
 import { TaskService } from './TaskService';
 
 export { PlanTemplate, PlanTemplateId, PlanTemplateTaskDraft, planTemplates };
@@ -15,12 +20,14 @@ export interface ApplyPlanTemplateResult {
 }
 
 export class PlanTemplateService {
-  static listTemplates(): PlanTemplate[] {
-    return planTemplates;
+  static async listTemplates(): Promise<PlanTemplate[]> {
+    const customTemplates = await StorageService.getCustomTemplates();
+    return mergeTemplates(customTemplates);
   }
 
   static async applyTemplate(templateId: PlanTemplateId): Promise<ApplyPlanTemplateResult> {
-    const template = findPlanTemplate(templateId);
+    const customTemplates = await StorageService.getCustomTemplates();
+    const template = findPlanTemplate(templateId, customTemplates);
     if (!template) {
       return {
         templateTitle: '',
@@ -47,5 +54,22 @@ export class PlanTemplateService {
       templateTitle: template.title,
       createdCount
     };
+  }
+
+  static async saveCurrentTasksAsTemplate(title: string): Promise<PlanTemplate | undefined> {
+    const activeTasks = await TaskService.listActive();
+    const template = createCustomTemplate(title, activeTasks, Date.now());
+    if (!template) {
+      return undefined;
+    }
+
+    const customTemplates = await StorageService.getCustomTemplates();
+    await StorageService.saveCustomTemplates(addCustomTemplate(customTemplates, template));
+    return template;
+  }
+
+  static async deleteCustomTemplate(templateId: PlanTemplateId): Promise<void> {
+    const customTemplates = await StorageService.getCustomTemplates();
+    await StorageService.saveCustomTemplates(removeCustomTemplate(customTemplates, templateId));
   }
 }

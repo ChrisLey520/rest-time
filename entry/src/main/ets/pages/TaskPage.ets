@@ -35,6 +35,9 @@ export struct TaskPage {
   @State editProjectName: string = '';
   @State timerState: TimerState = idleTimerState;
   @State projectSuggestions: string[] = [];
+  @State templates: PlanTemplate[] = planTemplates;
+  @State showSaveTemplateForm: boolean = false;
+  @State templateTitleDraft: string = '';
   @State planningSnapshot: PlanningSnapshot = {
     pace: 'empty',
     activeTaskCount: 0,
@@ -84,6 +87,7 @@ export struct TaskPage {
     this.starterPlan = await StarterPlanService.getPlan();
     const sessions = await SessionService.listAll();
     this.projectSuggestions = suggestProjectNames(this.tasks, sessions);
+    await this.loadTemplates();
   }
 
   private startTicker(): void {
@@ -335,6 +339,46 @@ export struct TaskPage {
     await this.refresh();
     await WidgetService.refreshAllForms();
     PromptService.showToast(`已生成 ${result.createdCount} 个任务`);
+  }
+
+  private async saveCurrentAsTemplate(): Promise<void> {
+    const template = await PlanTemplateService.saveCurrentTasksAsTemplate(this.templateTitleDraft);
+    if (!template) {
+      PromptService.showToast('先填写模板名称，并保留至少 1 个待办任务');
+      return;
+    }
+
+    this.templateTitleDraft = '';
+    this.showSaveTemplateForm = false;
+    await this.loadTemplates();
+    PromptService.showToast(`模板「${template.title}」已保存`);
+  }
+
+  private async deleteCustomTemplate(template: PlanTemplate): Promise<void> {
+    const result = await PromptService.showDialog({
+      title: `删除模板「${template.title}」？`,
+      message: '删除后不可恢复，已生成的任务不受影响。',
+      buttons: [
+        {
+          text: '取消',
+          color: '#5F9E8A'
+        },
+        {
+          text: '删除',
+          color: '#C96F5D'
+        }
+      ]
+    });
+
+    if (result.index === 1) {
+      await PlanTemplateService.deleteCustomTemplate(template.id);
+      await this.loadTemplates();
+      PromptService.showToast('模板已删除');
+    }
+  }
+
+  private async loadTemplates(): Promise<void> {
+    this.templates = await PlanTemplateService.listTemplates();
   }
 
   private async quickSetPlannedFor(task: Task, plannedFor: TaskPlannedFor): Promise<void> {
@@ -1090,16 +1134,75 @@ export struct TaskPage {
               }
               .alignItems(HorizontalAlign.Start)
               .layoutWeight(1);
+
+              if (this.activeTasks().length > 0) {
+                Button('存为模板')
+                  .height(32)
+                  .fontSize(12)
+                  .fontColor('#4D7EA8')
+                  .backgroundColor('#EAF2F8')
+                  .borderRadius(11)
+                  .onClick(() => {
+                    this.showSaveTemplateForm = !this.showSaveTemplateForm;
+                  });
+              }
             }
             .width('100%');
 
-            ForEach(planTemplates, (template: PlanTemplate) => {
+            if (this.showSaveTemplateForm) {
+              Column({ space: 10 }) {
+                TextInput({ placeholder: '模板名称，例如 我的工作日', text: this.templateTitleDraft })
+                  .height(42)
+                  .fontSize(13)
+                  .backgroundColor('#FFFFFF')
+                  .borderRadius(12)
+                  .maxLength(20)
+                  .onChange((value: string) => {
+                    this.templateTitleDraft = value;
+                  });
+                Row({ space: 8 }) {
+                  Text(`把当前 ${Math.min(this.activeTasks().length, 6)} 个待办存成可复用模板`)
+                    .fontSize(11)
+                    .fontColor('#7B8785')
+                    .layoutWeight(1);
+                  Button('保存')
+                    .height(32)
+                    .width(64)
+                    .fontSize(12)
+                    .fontColor('#FFFFFF')
+                    .backgroundColor('#5F9E8A')
+                    .borderRadius(11)
+                    .onClick(() => {
+                      this.saveCurrentAsTemplate();
+                    });
+                }
+                .width('100%')
+                .alignItems(VerticalAlign.Center);
+              }
+              .width('100%')
+              .padding(12)
+              .backgroundColor('#F6F8F7')
+              .borderRadius(14);
+            }
+
+            ForEach(this.templates, (template: PlanTemplate) => {
               Row({ space: 12 }) {
                 Column({ space: 5 }) {
-                  Text(template.title)
-                    .fontSize(16)
-                    .fontWeight(FontWeight.Medium)
-                    .fontColor('#1F2A2A');
+                  Row({ space: 6 }) {
+                    Text(template.title)
+                      .fontSize(16)
+                      .fontWeight(FontWeight.Medium)
+                      .fontColor('#1F2A2A');
+                    if (template.custom) {
+                      Text('自定义')
+                        .fontSize(10)
+                        .fontColor('#5F9E8A')
+                        .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                        .backgroundColor('#EAF3F0')
+                        .borderRadius(8);
+                    }
+                  }
+                  .alignItems(VerticalAlign.Center);
                   Text(template.subtitle)
                     .fontSize(12)
                     .fontColor('#7B8785')
@@ -1111,6 +1214,19 @@ export struct TaskPage {
                 }
                 .alignItems(HorizontalAlign.Start)
                 .layoutWeight(1);
+
+                if (template.custom) {
+                  Button('删除')
+                    .height(36)
+                    .width(52)
+                    .fontSize(13)
+                    .fontColor('#C96F5D')
+                    .backgroundColor('#FFF0EC')
+                    .borderRadius(12)
+                    .onClick(() => {
+                      this.deleteCustomTemplate(template);
+                    });
+                }
 
                 Button('生成')
                   .height(36)

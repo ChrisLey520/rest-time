@@ -1,6 +1,9 @@
-import { TaskPlannedFor, TaskPriority } from '../models/Task';
+import { Task, TaskPlannedFor, TaskPriority } from '../models/Task';
 
-export type PlanTemplateId = 'deep_work' | 'study_sprint' | 'maintenance' | 'restart';
+export type PlanTemplateId = string;
+
+export const CUSTOM_TEMPLATE_LIMIT = 6;
+export const CUSTOM_TEMPLATE_TASK_LIMIT = 6;
 
 export interface PlanTemplateTaskDraft {
   title: string;
@@ -16,6 +19,7 @@ export interface PlanTemplate {
   subtitle: string;
   projectName: string;
   estimatedFocusCount: number;
+  custom?: boolean;
   tasks: PlanTemplateTaskDraft[];
 }
 
@@ -142,10 +146,118 @@ export const planTemplates: PlanTemplate[] = [
   }
 ];
 
-export function findPlanTemplate(templateId: PlanTemplateId): PlanTemplate | undefined {
+export function findPlanTemplate(
+  templateId: PlanTemplateId,
+  customTemplates: PlanTemplate[] = []
+): PlanTemplate | undefined {
+  const custom = customTemplates.find((template: PlanTemplate) => template.id === templateId);
+  if (custom) {
+    return custom;
+  }
+
   return planTemplates.find((template: PlanTemplate) => template.id === templateId);
 }
 
 export function templateTaskCount(template: PlanTemplate): number {
   return template.tasks.length;
+}
+
+export function mergeTemplates(customTemplates: PlanTemplate[]): PlanTemplate[] {
+  const merged: PlanTemplate[] = [];
+  customTemplates.forEach((template: PlanTemplate) => {
+    merged.push(template);
+  });
+  planTemplates.forEach((template: PlanTemplate) => {
+    merged.push(template);
+  });
+
+  return merged;
+}
+
+function templateProjectName(tasks: PlanTemplateTaskDraft[]): string {
+  const counts: Map<string, number> = new Map();
+  tasks.forEach((task: PlanTemplateTaskDraft) => {
+    if (!task.projectName) {
+      return;
+    }
+
+    const current = counts.get(task.projectName);
+    counts.set(task.projectName, current ? current + 1 : 1);
+  });
+
+  let topName = '';
+  let topCount = 0;
+  counts.forEach((count: number, name: string) => {
+    if (count > topCount) {
+      topName = name;
+      topCount = count;
+    }
+  });
+
+  return topName ? topName : '个人';
+}
+
+export function createCustomTemplate(
+  title: string,
+  activeTasks: Task[],
+  createdAt: number
+): PlanTemplate | undefined {
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle) {
+    return undefined;
+  }
+
+  const drafts: PlanTemplateTaskDraft[] = [];
+  activeTasks.forEach((task: Task) => {
+    if (drafts.length >= CUSTOM_TEMPLATE_TASK_LIMIT || task.status !== 'active') {
+      return;
+    }
+
+    const remaining = Math.max(1, task.estimatedFocusCount - task.completedFocusCount);
+    drafts.push({
+      title: task.title,
+      estimatedFocusCount: remaining,
+      priority: task.priority === 'low' || task.priority === 'high' ? task.priority : 'normal',
+      plannedFor: task.plannedFor === 'today' || task.plannedFor === 'tomorrow' || task.plannedFor === 'later'
+        ? task.plannedFor
+        : 'today',
+      projectName: task.projectName && task.projectName.trim() ? task.projectName.trim() : ''
+    });
+  });
+
+  if (drafts.length === 0) {
+    return undefined;
+  }
+
+  let estimatedFocusCount = 0;
+  drafts.forEach((draft: PlanTemplateTaskDraft) => {
+    estimatedFocusCount += draft.estimatedFocusCount;
+  });
+
+  return {
+    id: `custom_${createdAt}`,
+    title: trimmedTitle.slice(0, 20),
+    subtitle: `从当前任务保存 · ${drafts.length} 个任务`,
+    projectName: templateProjectName(drafts),
+    estimatedFocusCount,
+    custom: true,
+    tasks: drafts
+  };
+}
+
+export function addCustomTemplate(
+  customTemplates: PlanTemplate[],
+  template: PlanTemplate,
+  limit: number = CUSTOM_TEMPLATE_LIMIT
+): PlanTemplate[] {
+  const next = customTemplates.filter((item: PlanTemplate) => item.title !== template.title);
+  next.unshift(template);
+  return next.slice(0, Math.max(1, Math.floor(limit)));
+}
+
+export function removeCustomTemplate(
+  customTemplates: PlanTemplate[],
+  templateId: PlanTemplateId
+): PlanTemplate[] {
+  return customTemplates.filter((template: PlanTemplate) => template.id !== templateId);
 }

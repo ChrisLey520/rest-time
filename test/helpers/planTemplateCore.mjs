@@ -121,10 +121,107 @@ export const planTemplates = [
   }
 ];
 
-export function findPlanTemplate(templateId) {
+export const CUSTOM_TEMPLATE_LIMIT = 6;
+export const CUSTOM_TEMPLATE_TASK_LIMIT = 6;
+
+export function findPlanTemplate(templateId, customTemplates = []) {
+  const custom = customTemplates.find((template) => template.id === templateId);
+  if (custom) {
+    return custom;
+  }
+
   return planTemplates.find((template) => template.id === templateId);
 }
 
 export function templateTaskCount(template) {
   return template.tasks.length;
+}
+
+export function mergeTemplates(customTemplates) {
+  const merged = [];
+  customTemplates.forEach((template) => {
+    merged.push(template);
+  });
+  planTemplates.forEach((template) => {
+    merged.push(template);
+  });
+
+  return merged;
+}
+
+function templateProjectName(tasks) {
+  const counts = new Map();
+  tasks.forEach((task) => {
+    if (!task.projectName) {
+      return;
+    }
+
+    const current = counts.get(task.projectName);
+    counts.set(task.projectName, current ? current + 1 : 1);
+  });
+
+  let topName = '';
+  let topCount = 0;
+  counts.forEach((count, name) => {
+    if (count > topCount) {
+      topName = name;
+      topCount = count;
+    }
+  });
+
+  return topName ? topName : '个人';
+}
+
+export function createCustomTemplate(title, activeTasks, createdAt) {
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle) {
+    return undefined;
+  }
+
+  const drafts = [];
+  activeTasks.forEach((task) => {
+    if (drafts.length >= CUSTOM_TEMPLATE_TASK_LIMIT || task.status !== 'active') {
+      return;
+    }
+
+    const remaining = Math.max(1, task.estimatedFocusCount - task.completedFocusCount);
+    drafts.push({
+      title: task.title,
+      estimatedFocusCount: remaining,
+      priority: task.priority === 'low' || task.priority === 'high' ? task.priority : 'normal',
+      plannedFor: task.plannedFor === 'today' || task.plannedFor === 'tomorrow' || task.plannedFor === 'later'
+        ? task.plannedFor
+        : 'today',
+      projectName: task.projectName && task.projectName.trim() ? task.projectName.trim() : ''
+    });
+  });
+
+  if (drafts.length === 0) {
+    return undefined;
+  }
+
+  let estimatedFocusCount = 0;
+  drafts.forEach((draft) => {
+    estimatedFocusCount += draft.estimatedFocusCount;
+  });
+
+  return {
+    id: `custom_${createdAt}`,
+    title: trimmedTitle.slice(0, 20),
+    subtitle: `从当前任务保存 · ${drafts.length} 个任务`,
+    projectName: templateProjectName(drafts),
+    estimatedFocusCount,
+    custom: true,
+    tasks: drafts
+  };
+}
+
+export function addCustomTemplate(customTemplates, template, limit = CUSTOM_TEMPLATE_LIMIT) {
+  const next = customTemplates.filter((item) => item.title !== template.title);
+  next.unshift(template);
+  return next.slice(0, Math.max(1, Math.floor(limit)));
+}
+
+export function removeCustomTemplate(customTemplates, templateId) {
+  return customTemplates.filter((template) => template.id !== templateId);
 }

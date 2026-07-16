@@ -6,6 +6,7 @@ import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig'
 import { Task } from '../models/Task';
 import { idleTimerState, TimerMode, TimerState } from '../models/TimerState';
 import { ErrorLogEntry } from '../utils/errorLogCore';
+import { PlanTemplate } from '../utils/planTemplateCore';
 
 const PREFERENCES_NAME = 'qishi_preferences';
 
@@ -19,6 +20,7 @@ interface StorageKeys {
   widgetFormIds: string;
   scheduledReminder: string;
   errorLogs: string;
+  customTemplates: string;
 }
 
 const STORAGE_KEYS: StorageKeys = {
@@ -30,7 +32,8 @@ const STORAGE_KEYS: StorageKeys = {
   progress: 'qishi.progress',
   widgetFormIds: 'qishi.widgetFormIds',
   scheduledReminder: 'qishi.scheduledReminder',
-  errorLogs: 'qishi.errorLogs'
+  errorLogs: 'qishi.errorLogs',
+  customTemplates: 'qishi.customTemplates'
 };
 
 export interface PomodoroProgress {
@@ -235,6 +238,14 @@ export class StorageService {
 
   static async saveErrorLogs(entries: ErrorLogEntry[]): Promise<void> {
     await StorageService.writeJson<ErrorLogEntry[]>(STORAGE_KEYS.errorLogs, entries);
+  }
+
+  static async getCustomTemplates(): Promise<PlanTemplate[]> {
+    return StorageService.readJson<PlanTemplate[]>(STORAGE_KEYS.customTemplates, []);
+  }
+
+  static async saveCustomTemplates(templates: PlanTemplate[]): Promise<void> {
+    await StorageService.writeJson<PlanTemplate[]>(STORAGE_KEYS.customTemplates, templates);
   }
 
   static async saveBillingSettings(settings: BillingSettings): Promise<void> {
