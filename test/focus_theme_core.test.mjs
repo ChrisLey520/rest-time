@@ -15,6 +15,10 @@ assert.deepEqual(
 // id 唯一
 assert.equal(new Set(FOCUS_THEMES.map((theme) => theme.id)).size, FOCUS_THEMES.length);
 
+// 每个主题都有专属图标:非空且不重复
+assert.ok(FOCUS_THEMES.every((theme) => theme.symbol && theme.symbol.length > 0));
+assert.equal(new Set(FOCUS_THEMES.map((theme) => theme.symbol)).size, FOCUS_THEMES.length);
+
 // 典藏级主题带数字辉光,普通主题没有
 assert.ok(findFocusTheme('obsidian_gold').timerGlowColor);
 assert.ok(findFocusTheme('aurora_night').timerGlowColor);

@@ -39,6 +39,7 @@ export struct SettingsPage {
       title: '晨雾',
       subtitle: '默认的安静浅色',
       price: 0,
+      symbol: '☁',
       backgroundColor: '#F6F8F7',
       cardColor: '#FFFFFF',
       timerColor: '#1F2A2A',
@@ -501,15 +502,23 @@ export struct SettingsPage {
 
           ForEach(this.themeSnapshot.items, (item: ThemeListItem) => {
             Row({ space: 12 }) {
-              Column()
-                .width(34)
-                .height(34)
-                .backgroundColor(item.theme.backgroundColor)
-                .borderRadius(10)
-                .border({
-                  width: 2,
-                  color: item.theme.accentColor
-                });
+              Stack({ alignContent: Alignment.Center }) {
+                Column()
+                  .width(34)
+                  .height(34)
+                  .backgroundColor(item.theme.backgroundColor)
+                  .borderRadius(10)
+                  .border({
+                    width: 2,
+                    color: item.theme.accentColor
+                  });
+
+                Text(item.theme.symbol)
+                  .fontSize(15)
+                  .fontColor(item.theme.accentColor);
+              }
+              .width(34)
+              .height(34);
 
               Column({ space: 3 }) {
                 Text(item.theme.title)
