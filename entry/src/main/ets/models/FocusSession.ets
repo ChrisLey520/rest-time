@@ -2,7 +2,7 @@ export type FocusSessionStatus = 'completed' | 'abandoned';
 export type FocusAbandonReason = 'tired' | 'blocked' | 'distracted' | 'wrong_task' | 'other';
 export type FocusRestartReason = 'abandoned_retry';
 export type StarterPlanRiskLevel = 'low' | 'medium' | 'high';
-export type StarterPlanReason = 'fresh_start' | 'recent_abandon' | 'recent_away' | 'low_completion';
+export type StarterPlanReason = 'fresh_start' | 'recent_abandon' | 'recent_away' | 'low_completion' | 'long_absence';
 export type FocusIntegrityStatus = 'clean' | 'violated';
 export type FocusIntegrityViolationReason = 'left_app' | 'app_terminated' | 'stale_presence';
 
