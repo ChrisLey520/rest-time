@@ -41,6 +41,33 @@ export const FOCUS_EFFECTS: FocusEffect[] = [
     ringColors: ['#5F9E8A', '#5E9CA8', '#4D7EA8'],
     symbol: '❋',
     durationMs: 1300
+  },
+  {
+    id: 'bloom',
+    title: '花信',
+    subtitle: '雾紫双环里绽开一朵，温柔地收下这一段',
+    price: 300,
+    ringColors: ['#8A7FB4', '#D8CFE8'],
+    symbol: '❀',
+    durationMs: 1200
+  },
+  {
+    id: 'tideline',
+    title: '潮线',
+    subtitle: '三层深浅海蓝，退潮后留下的完成印记',
+    price: 400,
+    ringColors: ['#4D7EA8', '#5E9CA8', '#A8CBD6'],
+    symbol: '≈',
+    durationMs: 1400
+  },
+  {
+    id: 'embers',
+    title: '燃点',
+    subtitle: '赤陶到暖金的四层烬火，献给最难的那段专注',
+    price: 550,
+    ringColors: ['#C96F5D', '#B08954', '#E8D5B0', '#F0E4D8'],
+    symbol: '✹',
+    durationMs: 1600
   }
 ];
 

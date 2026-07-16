@@ -54,6 +54,46 @@ export const FOCUS_THEMES: FocusTheme[] = [
     cardColor: '#273443',
     timerColor: '#DCE8F2',
     accentColor: '#5E9CA8'
+  },
+  {
+    id: 'paper',
+    title: '宣纸',
+    subtitle: '暖白纸感，白天书房里的安静底色',
+    price: 350,
+    backgroundColor: '#F5F0E6',
+    cardColor: '#FCF9F2',
+    timerColor: '#3A342A',
+    accentColor: '#A8815E'
+  },
+  {
+    id: 'bamboo',
+    title: '竹影',
+    subtitle: '清浅豆绿，清晨窗边的一盏竹',
+    price: 450,
+    backgroundColor: '#EBF1E8',
+    cardColor: '#F7FAF5',
+    timerColor: '#2C3A2E',
+    accentColor: '#7FA05F'
+  },
+  {
+    id: 'ink',
+    title: '墨夜',
+    subtitle: '近乎全黑的极简，深夜最后一段专注',
+    price: 600,
+    backgroundColor: '#15181B',
+    cardColor: '#1E2226',
+    timerColor: '#D9DDDB',
+    accentColor: '#8A7FB4'
+  },
+  {
+    id: 'ember',
+    title: '余烬',
+    subtitle: '炭黑里一点暖橘，收藏级的沉静',
+    price: 800,
+    backgroundColor: '#241F1C',
+    cardColor: '#2E2824',
+    timerColor: '#F0E4D8',
+    accentColor: '#C96F5D'
   }
 ];
 
