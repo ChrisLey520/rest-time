@@ -24,6 +24,7 @@ const checks = [
   ['node', ['test/project_suggest_core.test.mjs']],
   ['node', ['test/error_log_core.test.mjs']],
   ['node', ['test/project_color_core.test.mjs']],
+  ['node', ['test/streak_guard_core.test.mjs']],
   ['node', ['test/task_core.test.mjs']],
   ['node', ['--check', 'scripts/check-deveco-env.mjs']],
   ['git', ['diff', '--check']]

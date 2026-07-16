@@ -7,6 +7,7 @@ import { Task } from '../models/Task';
 import { idleTimerState, TimerMode, TimerState } from '../models/TimerState';
 import { ErrorLogEntry } from '../utils/errorLogCore';
 import { PlanTemplate } from '../utils/planTemplateCore';
+import { normalizeWallet, StreakGuardWallet } from '../utils/streakGuardCore';
 
 const PREFERENCES_NAME = 'qishi_preferences';
 
@@ -21,6 +22,7 @@ interface StorageKeys {
   scheduledReminder: string;
   errorLogs: string;
   customTemplates: string;
+  streakGuardWallet: string;
 }
 
 const STORAGE_KEYS: StorageKeys = {
@@ -33,7 +35,8 @@ const STORAGE_KEYS: StorageKeys = {
   widgetFormIds: 'qishi.widgetFormIds',
   scheduledReminder: 'qishi.scheduledReminder',
   errorLogs: 'qishi.errorLogs',
-  customTemplates: 'qishi.customTemplates'
+  customTemplates: 'qishi.customTemplates',
+  streakGuardWallet: 'qishi.streakGuardWallet'
 };
 
 export interface PomodoroProgress {
@@ -246,6 +249,17 @@ export class StorageService {
 
   static async saveCustomTemplates(templates: PlanTemplate[]): Promise<void> {
     await StorageService.writeJson<PlanTemplate[]>(STORAGE_KEYS.customTemplates, templates);
+  }
+
+  static async getStreakGuardWallet(): Promise<StreakGuardWallet> {
+    return normalizeWallet(StorageService.readJson<StreakGuardWallet | undefined>(
+      STORAGE_KEYS.streakGuardWallet,
+      undefined
+    ));
+  }
+
+  static async saveStreakGuardWallet(wallet: StreakGuardWallet): Promise<void> {
+    await StorageService.writeJson<StreakGuardWallet>(STORAGE_KEYS.streakGuardWallet, wallet);
   }
 
   static async saveBillingSettings(settings: BillingSettings): Promise<void> {

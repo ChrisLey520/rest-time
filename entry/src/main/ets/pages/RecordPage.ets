@@ -13,6 +13,7 @@ import { FileExportService } from '../services/FileExportService';
 import { ImageExportService } from '../services/ImageExportService';
 import { createReportImageFileName } from '../utils/csvExportCore';
 import { projectColor } from '../utils/projectColorCore';
+import { STREAK_GUARD_MAX_HELD, STREAK_GUARD_PRICE, StreakGuardService, StreakGuardSnapshot } from '../services/StreakGuardService';
 import {
   MonthlyReport,
   MonthlyReportMetric,
@@ -152,6 +153,11 @@ export struct RecordPage {
   @State billingSummary: BillingSummary = defaultBillingSummary;
   @State billingPeriod: BillingPeriod = 'current';
   @State stageSnapshot: RecordStageSnapshot = defaultRecordStageSnapshot;
+  @State streakGuardSnapshot: StreakGuardSnapshot = {
+    streakDays: 0,
+    heldGuards: 0,
+    coinBalance: 0
+  };
   @State selectedFilter: RecordFilter = 'all';
   private ticker: number = -1;
 
@@ -193,6 +199,7 @@ export struct RecordPage {
     const billingSummary = stageSnapshot.showBilling
       ? await BillingService.getCurrentSummary(this.billingPeriod)
       : defaultBillingSummary;
+    const streakGuardSnapshot = await StreakGuardService.getSnapshot();
 
     this.sessions = sessions;
     this.todaySeconds = stats.focusSeconds;
@@ -206,6 +213,7 @@ export struct RecordPage {
     this.stageSnapshot = stageSnapshot;
     this.monthlyReport = monthlyReport;
     this.billingSummary = billingSummary;
+    this.streakGuardSnapshot = streakGuardSnapshot;
   }
 
   private filteredSessions(): FocusSession[] {
@@ -315,11 +323,34 @@ export struct RecordPage {
   }
 
   private streakText(): string {
-    if (this.reviewStats.currentStreakDays <= 0) {
+    if (this.streakGuardSnapshot.streakDays <= 0) {
       return '待开启';
     }
 
-    return `${this.reviewStats.currentStreakDays} 天`;
+    return `${this.streakGuardSnapshot.streakDays} 天`;
+  }
+
+  private async buyStreakGuard(): Promise<void> {
+    const outcome = await StreakGuardService.buyGuard();
+    this.streakGuardSnapshot = outcome.snapshot;
+    PromptService.showToast(outcome.message);
+  }
+
+  private canBuyStreakGuard(): boolean {
+    return this.streakGuardSnapshot.heldGuards < STREAK_GUARD_MAX_HELD
+      && this.streakGuardSnapshot.coinBalance >= STREAK_GUARD_PRICE;
+  }
+
+  private streakGuardHintText(): string {
+    if (this.streakGuardSnapshot.heldGuards >= STREAK_GUARD_MAX_HELD) {
+      return '已备满，缺席时会自动守住节奏';
+    }
+
+    if (this.streakGuardSnapshot.coinBalance < STREAK_GUARD_PRICE) {
+      return `再攒 ${STREAK_GUARD_PRICE - this.streakGuardSnapshot.coinBalance} 枚时光币可兑换一张`;
+    }
+
+    return '免费休息日用完后自动消耗，节奏不断';
   }
 
   private reviewSummaryTitle(): string {
@@ -962,6 +993,44 @@ export struct RecordPage {
               }, (day: DayStats) => `${day.startAt}`);
             }
             .width('100%');
+
+            Column({ space: 8 }) {
+              Row() {
+                Column({ space: 3 }) {
+                  Text('节奏保护券')
+                    .fontSize(14)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor('#1F2A2A');
+                  Text(this.streakGuardHintText())
+                    .fontSize(11)
+                    .fontColor('#7B8785');
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1);
+
+                Button(`${STREAK_GUARD_PRICE} 币兑换`)
+                  .height(32)
+                  .fontSize(12)
+                  .fontColor(this.canBuyStreakGuard() ? '#FFFFFF' : '#9AA6A3')
+                  .backgroundColor(this.canBuyStreakGuard() ? '#5F9E8A' : '#EEF3F2')
+                  .borderRadius(11)
+                  .enabled(this.canBuyStreakGuard())
+                  .onClick(() => {
+                    this.buyStreakGuard();
+                  });
+              }
+              .width('100%')
+              .alignItems(VerticalAlign.Center);
+
+              Text(`持有 ${this.streakGuardSnapshot.heldGuards}/${STREAK_GUARD_MAX_HELD} 张 · 时光币余额 ${this.streakGuardSnapshot.coinBalance}`)
+                .fontSize(11)
+                .fontColor('#4D7EA8')
+                .width('100%');
+            }
+            .width('100%')
+            .padding(12)
+            .backgroundColor('#F6F8F7')
+            .borderRadius(14);
 
             if (!this.stageSnapshot.showMonthlyReport) {
               Column({ space: 5 }) {
