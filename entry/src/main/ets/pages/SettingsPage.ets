@@ -1,7 +1,7 @@
 import { BillingSettings, BillingService, defaultBillingSettings } from '../services/BillingService';
 import { defaultPomodoroConfig, PomodoroConfig } from '../models/PomodoroConfig';
 import { ErrorLogEntry, ErrorLogService, errorSourceLabel } from '../services/ErrorLogService';
-import { FocusThemeService, ThemeListItem, ThemeStoreSnapshot } from '../services/FocusThemeService';
+import { EffectListItem, FocusThemeService, ThemeListItem, ThemeStoreSnapshot } from '../services/FocusThemeService';
 import { PRO_FEATURES, ProFeatureInfo, ProService, ProSnapshot } from '../services/ProService';
 import { PromptService } from '../services/PromptService';
 import { ReminderService } from '../services/ReminderService';
@@ -33,6 +33,7 @@ export struct SettingsPage {
   };
   @State themeSnapshot: ThemeStoreSnapshot = {
     items: [],
+    effectItems: [],
     activeTheme: {
       id: 'default',
       title: '晨雾',
@@ -42,6 +43,15 @@ export struct SettingsPage {
       cardColor: '#FFFFFF',
       timerColor: '#1F2A2A',
       accentColor: '#5F9E8A'
+    },
+    activeEffect: {
+      id: 'ripple',
+      title: '涟漪',
+      subtitle: '默认的一圈安静涟漪',
+      price: 0,
+      ringColors: ['#5F9E8A'],
+      symbol: '✓',
+      durationMs: 900
     },
     coinBalance: 0
   };
@@ -66,6 +76,18 @@ export struct SettingsPage {
 
   private async selectTheme(themeId: string): Promise<void> {
     const outcome = await FocusThemeService.selectTheme(themeId);
+    this.themeSnapshot = outcome.snapshot;
+    PromptService.showToast(outcome.message);
+  }
+
+  private async unlockEffect(effectId: string): Promise<void> {
+    const outcome = await FocusThemeService.unlockEffect(effectId);
+    this.themeSnapshot = outcome.snapshot;
+    PromptService.showToast(outcome.message);
+  }
+
+  private async selectEffect(effectId: string): Promise<void> {
+    const outcome = await FocusThemeService.selectEffect(effectId);
     this.themeSnapshot = outcome.snapshot;
     PromptService.showToast(outcome.message);
   }
@@ -538,6 +560,76 @@ export struct SettingsPage {
           }, (item: ThemeListItem) => item.theme.id);
 
           Text('氛围只改变专注进行中的配色，完成后回到日常界面。')
+            .fontSize(11)
+            .fontColor('#7B8785')
+            .width('100%');
+
+          Divider()
+            .color('#EEF3F2');
+
+          Text('完成动效')
+            .fontSize(14)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#1F2A2A')
+            .width('100%');
+
+          ForEach(this.themeSnapshot.effectItems, (item: EffectListItem) => {
+            Row({ space: 12 }) {
+              Text(item.effect.symbol)
+                .fontSize(20)
+                .fontColor(item.effect.ringColors[0])
+                .width(34)
+                .textAlign(TextAlign.Center);
+
+              Column({ space: 3 }) {
+                Text(item.effect.title)
+                  .fontSize(14)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor('#1F2A2A');
+                Text(item.effect.subtitle)
+                  .fontSize(11)
+                  .fontColor('#7B8785')
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis });
+              }
+              .alignItems(HorizontalAlign.Start)
+              .layoutWeight(1);
+
+              if (item.selected) {
+                Text('使用中')
+                  .fontSize(12)
+                  .fontColor('#5F9E8A')
+                  .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                  .backgroundColor('#EAF3F0')
+                  .borderRadius(11);
+              } else if (item.unlocked) {
+                Button('使用')
+                  .height(32)
+                  .fontSize(12)
+                  .fontColor('#FFFFFF')
+                  .backgroundColor('#5F9E8A')
+                  .borderRadius(11)
+                  .onClick(() => {
+                    this.selectEffect(item.effect.id);
+                  });
+              } else {
+                Button(`${item.effect.price} 币`)
+                  .height(32)
+                  .fontSize(12)
+                  .fontColor(this.themeSnapshot.coinBalance >= item.effect.price ? '#FFFFFF' : '#9AA6A3')
+                  .backgroundColor(this.themeSnapshot.coinBalance >= item.effect.price ? '#4D7EA8' : '#EEF3F2')
+                  .borderRadius(11)
+                  .enabled(this.themeSnapshot.coinBalance >= item.effect.price)
+                  .onClick(() => {
+                    this.unlockEffect(item.effect.id);
+                  });
+              }
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Center);
+          }, (item: EffectListItem) => item.effect.id);
+
+          Text('动效在每段专注完成时播放一次。')
             .fontSize(11)
             .fontColor('#7B8785')
             .width('100%');

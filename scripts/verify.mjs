@@ -26,6 +26,7 @@ const checks = [
   ['node', ['test/project_color_core.test.mjs']],
   ['node', ['test/streak_guard_core.test.mjs']],
   ['node', ['test/focus_theme_core.test.mjs']],
+  ['node', ['test/focus_effect_core.test.mjs']],
   ['node', ['test/pro_core.test.mjs']],
   ['node', ['test/task_core.test.mjs']],
   ['node', ['--check', 'scripts/check-deveco-env.mjs']],

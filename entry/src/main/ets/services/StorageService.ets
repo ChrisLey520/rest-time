@@ -25,6 +25,7 @@ interface StorageKeys {
   customTemplates: string;
   streakGuardWallet: string;
   focusThemeId: string;
+  focusEffectId: string;
   proState: string;
 }
 
@@ -41,6 +42,7 @@ const STORAGE_KEYS: StorageKeys = {
   customTemplates: 'qishi.customTemplates',
   streakGuardWallet: 'qishi.streakGuardWallet',
   focusThemeId: 'qishi.focusThemeId',
+  focusEffectId: 'qishi.focusEffectId',
   proState: 'qishi.proState'
 };
 
@@ -273,6 +275,14 @@ export class StorageService {
 
   static async saveFocusThemeId(themeId: string): Promise<void> {
     await StorageService.writeJson<string>(STORAGE_KEYS.focusThemeId, themeId);
+  }
+
+  static async getFocusEffectId(): Promise<string> {
+    return StorageService.readJson<string>(STORAGE_KEYS.focusEffectId, 'ripple');
+  }
+
+  static async saveFocusEffectId(effectId: string): Promise<void> {
+    await StorageService.writeJson<string>(STORAGE_KEYS.focusEffectId, effectId);
   }
 
   static async getProState(): Promise<ProState> {

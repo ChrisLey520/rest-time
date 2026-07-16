@@ -18,7 +18,9 @@ import { PromptService } from '../services/PromptService';
 import { StarterPlan, StarterPlanService } from '../services/StarterPlanService';
 import { WidgetService } from '../services/WidgetService';
 import { formatDuration } from '../utils/dateTime';
-import { FocusTheme, FocusThemeService } from '../services/FocusThemeService';
+import { CompletionEffect } from '../components/CompletionEffect';
+import { FocusEffect, FocusTheme, FocusThemeService } from '../services/FocusThemeService';
+import { findFocusEffect } from '../utils/focusEffectCore';
 import { findFocusTheme } from '../utils/focusThemeCore';
 import { TIME_COIN_DAILY_CAP, earnedTimeCoinsToday } from '../utils/timeCoinCore';
 
@@ -92,6 +94,7 @@ export struct FocusPage {
   @State completedFocusRounds: number = 0;
   @State todayTimeCoins: number = 0;
   @State focusTheme: FocusTheme = findFocusTheme('default');
+  @State focusEffect: FocusEffect = findFocusEffect('ripple');
   private ticker: number = -1;
   private widgetSnapshotKey: string = '';
 
@@ -119,6 +122,7 @@ export struct FocusPage {
     this.starterPlan = await StarterPlanService.getPlan();
     this.completedFocusRounds = await PomodoroProgressService.getCompletedFocusRounds();
     this.focusTheme = await FocusThemeService.getActiveTheme();
+    this.focusEffect = await FocusThemeService.getActiveEffect();
     await this.refreshWidgetIfChanged();
   }
 
@@ -1484,6 +1488,10 @@ export struct FocusPage {
             }
             .width('100%');
           } else if (this.timerState.status === 'idle' && this.timerState.mode === 'break') {
+            if (!this.isRecoveryGateStillRequired()) {
+              CompletionEffect({ effect: this.focusEffect });
+            }
+
             Column({ space: 8 }) {
               Text(this.focusCompletedTitle())
                 .fontSize(17)
