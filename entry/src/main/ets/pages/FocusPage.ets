@@ -870,6 +870,31 @@ export struct FocusPage {
     return this.timerState.mode === 'focus' && this.timerState.status === 'running';
   }
 
+  // 专注进行中整页走主题配色；其余状态保持日常浅色。
+  private themeCardColor(): string {
+    return this.isFocusRunning() ? this.focusTheme.cardColor : '#FFFFFF';
+  }
+
+  private themeCardBorderColor(): string {
+    return this.isFocusRunning() ? this.focusTheme.cardColor : '#DDE8EA';
+  }
+
+  private themeInnerCardColor(): string {
+    return this.isFocusRunning() ? this.focusTheme.backgroundColor : '#F6F8F7';
+  }
+
+  private themePrimaryTextColor(): string {
+    return this.isFocusRunning() ? this.focusTheme.timerColor : '#1F2A2A';
+  }
+
+  private themeSecondaryTextColor(): string {
+    return this.isFocusRunning() ? this.focusTheme.accentColor : '#7B8785';
+  }
+
+  private themeAccentColor(fallback: string): string {
+    return this.isFocusRunning() ? this.focusTheme.accentColor : fallback;
+  }
+
   private isRecoveryGateStillRequired(): boolean {
     return this.isRecoveryCompletedState() && this.recoveryStepIndex() >= 0;
   }
@@ -1063,9 +1088,9 @@ export struct FocusPage {
 
           Text(this.statusText())
             .fontSize(13)
-            .fontColor('#5F9E8A')
+            .fontColor(this.isFocusRunning() ? this.focusTheme.backgroundColor : '#5F9E8A')
             .padding({ left: 12, right: 12, top: 7, bottom: 7 })
-            .backgroundColor('#EAF3F0')
+            .backgroundColor(this.isFocusRunning() ? this.focusTheme.accentColor : '#EAF3F0')
             .borderRadius(14);
         }
         .width('100%');
@@ -1608,11 +1633,11 @@ export struct FocusPage {
                   Text(this.isReturnProofActive() ? '守门整理' : '下一步小动作')
                     .fontSize(13)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor('#4D7EA8');
+                    .fontColor(this.themeAccentColor('#4D7EA8'));
                   Text(this.isReturnProofActive() ? this.returnProofText() : this.microActionText())
                     .fontSize(16)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor('#1F2A2A')
+                    .fontColor(this.themePrimaryTextColor())
                     .maxLines(2)
                     .textOverflow({ overflow: TextOverflow.Ellipsis });
                 }
@@ -1622,7 +1647,7 @@ export struct FocusPage {
                 Text(this.microActionRemainingText())
                   .fontSize(14)
                   .fontWeight(FontWeight.Medium)
-                  .fontColor('#5F9E8A');
+                  .fontColor(this.themeAccentColor('#5F9E8A'));
               }
               .width('100%')
               .alignItems(VerticalAlign.Center);
@@ -1631,13 +1656,13 @@ export struct FocusPage {
                 Row()
                   .width('100%')
                   .height(7)
-                  .backgroundColor('#EAF3F0')
+                  .backgroundColor(this.isFocusRunning() ? this.focusTheme.cardColor : '#EAF3F0')
                   .borderRadius(4);
 
                 Row()
                   .width(this.microActionProgressWidth())
                   .height(7)
-                  .backgroundColor('#5F9E8A')
+                  .backgroundColor(this.themeAccentColor('#5F9E8A'))
                   .borderRadius(4);
               }
               .width('100%')
@@ -1649,8 +1674,8 @@ export struct FocusPage {
                     .height(38)
                     .layoutWeight(1)
                     .fontSize(13)
-                    .fontColor('#FFFFFF')
-                    .backgroundColor('#5F9E8A')
+                    .fontColor(this.isFocusRunning() ? this.focusTheme.backgroundColor : '#FFFFFF')
+                    .backgroundColor(this.themeAccentColor('#5F9E8A'))
                     .borderRadius(12)
                     .onClick(() => {
                       this.onCompleteMicroAction();
@@ -1660,8 +1685,8 @@ export struct FocusPage {
                     .height(38)
                     .layoutWeight(1)
                     .fontSize(13)
-                    .fontColor('#1F2A2A')
-                    .backgroundColor('#DDE8EA')
+                    .fontColor(this.themePrimaryTextColor())
+                    .backgroundColor(this.isFocusRunning() ? this.focusTheme.cardColor : '#DDE8EA')
                     .borderRadius(12)
                     .onClick(() => {
                       this.onResetMicroAction();
@@ -1671,8 +1696,8 @@ export struct FocusPage {
                     .height(38)
                     .layoutWeight(1)
                     .fontSize(13)
-                    .fontColor('#4D7EA8')
-                    .backgroundColor('#EAF2F8')
+                    .fontColor(this.themeAccentColor('#4D7EA8'))
+                    .backgroundColor(this.isFocusRunning() ? this.focusTheme.cardColor : '#EAF2F8')
                     .borderRadius(12)
                     .onClick(() => {
                       this.onBlockedMicroAction();
@@ -1683,11 +1708,11 @@ export struct FocusPage {
             }
             .width('100%')
             .padding(14)
-            .backgroundColor('#F6F8F7')
+            .backgroundColor(this.themeInnerCardColor())
             .borderRadius(16)
             .border({
               width: 1,
-              color: '#DDE8EA'
+              color: this.isFocusRunning() ? this.focusTheme.cardColor : '#DDE8EA'
             });
 
             if (this.isGuardCooling()) {
@@ -1823,11 +1848,11 @@ export struct FocusPage {
         }
         .width('100%')
         .padding(20)
-        .backgroundColor('#FFFFFF')
+        .backgroundColor(this.themeCardColor())
         .borderRadius(20)
         .border({
           width: 1,
-          color: '#DDE8EA'
+          color: this.themeCardBorderColor()
         });
 
         if (!this.isFocusRunning()) {
