@@ -463,26 +463,28 @@ export struct SettingsPage {
         AppCard({ cardPadding: 18 }) {
           Column({ space: 14 }) {
             Row() {
-              Row({ space: 8 }) {
-                SymbolGlyph($r('sys.symbol.chevron_right'))
-                  .fontSize(15)
-                  .fontColor([DT.textSecondary])
-                  .rotate({ angle: this.isExpanded('pro') ? 90 : 0 })
-                  .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
+              Column({ space: 5 }) {
+                Row({ space: 8 }) {
+                  SymbolGlyph($r('sys.symbol.chevron_right'))
+                    .fontSize(15)
+                    .fontColor([DT.textSecondary])
+                    .rotate({ angle: this.isExpanded('pro') ? 90 : 0 })
+                    .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
 
-                Column({ space: 5 }) {
                   Text('栖时 Pro')
                     .fontSize(20)
                     .fontWeight(FontWeight.Bold)
                     .fontColor(DT.textPrimary);
-                  Text(this.proSnapshot.statusText)
-                    .fontSize(13)
-                    .fontColor(DT.brand);
                 }
-                .alignItems(HorizontalAlign.Start);
+                .alignItems(VerticalAlign.Center);
+
+                Text(this.proSnapshot.statusText)
+                  .fontSize(13)
+                  .fontColor(DT.brand)
+                  .margin({ left: 23 });
               }
               .layoutWeight(1)
-              .alignItems(VerticalAlign.Center)
+              .alignItems(HorizontalAlign.Start)
               .onClick(() => {
                 this.toggleSection('pro');
               });
@@ -544,26 +546,28 @@ export struct SettingsPage {
         AppCard({ cardPadding: 18 }) {
           Column({ space: 14 }) {
             Row() {
-              Row({ space: 8 }) {
-                SymbolGlyph($r('sys.symbol.chevron_right'))
-                  .fontSize(15)
-                  .fontColor([DT.textSecondary])
-                  .rotate({ angle: this.isExpanded('ambience') ? 90 : 0 })
-                  .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
+              Column({ space: 4 }) {
+                Row({ space: 8 }) {
+                  SymbolGlyph($r('sys.symbol.chevron_right'))
+                    .fontSize(15)
+                    .fontColor([DT.textSecondary])
+                    .rotate({ angle: this.isExpanded('ambience') ? 90 : 0 })
+                    .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
 
-                Column({ space: 4 }) {
                   Text('专注氛围')
                     .fontSize(16)
                     .fontWeight(FontWeight.Medium)
                     .fontColor(DT.textPrimary);
-                  Text('用时光币解锁专注中的配色')
-                    .fontSize(12)
-                    .fontColor(DT.textSecondary);
                 }
-                .alignItems(HorizontalAlign.Start);
+                .alignItems(VerticalAlign.Center);
+
+                Text('用时光币解锁专注中的配色')
+                  .fontSize(12)
+                  .fontColor(DT.textSecondary)
+                  .margin({ left: 23 });
               }
               .layoutWeight(1)
-              .alignItems(VerticalAlign.Center)
+              .alignItems(HorizontalAlign.Start)
               .onClick(() => {
                 this.toggleSection('ambience');
               });
