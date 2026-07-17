@@ -31,6 +31,8 @@ export struct SettingsPage {
   @State billingSettings: BillingSettings = defaultBillingSettings;
   @State errorLogs: ErrorLogEntry[] = [];
   @State showErrorLogs: boolean = false;
+  // 各设置块的展开状态；默认全部展开。
+  @State expandedSections: string[] = ['pro', 'ambience', 'billing', 'rhythm', 'reminder', 'guard', 'debug'];
   @State proSnapshot: ProSnapshot = {
     active: false,
     statusText: '体验期 · 以下能力当前全部免费开放',
@@ -412,6 +414,43 @@ export struct SettingsPage {
     }
   }
 
+  private isExpanded(section: string): boolean {
+    return this.expandedSections.includes(section);
+  }
+
+  private toggleSection(section: string): void {
+    this.getUIContext().animateTo({ duration: DT.durBase, curve: Curve.EaseOut }, () => {
+      if (this.isExpanded(section)) {
+        this.expandedSections = this.expandedSections.filter((item: string) => item !== section);
+      } else {
+        this.expandedSections = this.expandedSections.concat([section]);
+      }
+    });
+  }
+
+  // 可点击的收起/展开标题行：左侧箭头（收起向右、展开向下旋转过渡）+ 标题。
+  @Builder
+  sectionHeader(section: string, title: string) {
+    Row({ space: 8 }) {
+      SymbolGlyph($r('sys.symbol.chevron_right'))
+        .fontSize(15)
+        .fontColor([DT.textSecondary])
+        .rotate({ angle: this.isExpanded(section) ? 90 : 0 })
+        .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
+
+      Text(title)
+        .fontSize(16)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(DT.textPrimary)
+        .layoutWeight(1);
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+    .onClick(() => {
+      this.toggleSection(section);
+    });
+  }
+
   build() {
     Scroll() {
       Column({ space: 18 }) {
@@ -424,17 +463,29 @@ export struct SettingsPage {
         AppCard({ cardPadding: 18 }) {
           Column({ space: 14 }) {
             Row() {
-              Column({ space: 5 }) {
-                Text('栖时 Pro')
-                  .fontSize(20)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor(DT.textPrimary);
-                Text(this.proSnapshot.statusText)
-                  .fontSize(13)
-                  .fontColor(DT.brand);
+              Row({ space: 8 }) {
+                SymbolGlyph($r('sys.symbol.chevron_right'))
+                  .fontSize(15)
+                  .fontColor([DT.textSecondary])
+                  .rotate({ angle: this.isExpanded('pro') ? 90 : 0 })
+                  .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
+
+                Column({ space: 5 }) {
+                  Text('栖时 Pro')
+                    .fontSize(20)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(DT.textPrimary);
+                  Text(this.proSnapshot.statusText)
+                    .fontSize(13)
+                    .fontColor(DT.brand);
+                }
+                .alignItems(HorizontalAlign.Start);
               }
-              .alignItems(HorizontalAlign.Start)
-              .layoutWeight(1);
+              .layoutWeight(1)
+              .alignItems(VerticalAlign.Center)
+              .onClick(() => {
+                this.toggleSection('pro');
+              });
 
               Text(this.proSnapshot.badgeText)
                 .fontSize(12)
@@ -446,37 +497,45 @@ export struct SettingsPage {
             .width('100%')
             .alignItems(VerticalAlign.Center);
 
-            ForEach(PRO_FEATURES, (feature: ProFeatureInfo) => {
-              Row({ space: 12 }) {
-                Text('✓')
-                  .fontSize(14)
-                  .fontColor(DT.brand);
-                Column({ space: 3 }) {
-                  Text(feature.title)
-                    .fontSize(14)
-                    .fontWeight(FontWeight.Medium)
-                    .fontColor(DT.textPrimary)
-                    .width('100%');
-                  Text(feature.description)
-                    .fontSize(12)
+            if (this.isExpanded('pro')) {
+              Column({ space: 14 }) {
+                ForEach(PRO_FEATURES, (feature: ProFeatureInfo) => {
+                  Row({ space: 12 }) {
+                    Text('✓')
+                      .fontSize(14)
+                      .fontColor(DT.brand);
+                    Column({ space: 3 }) {
+                      Text(feature.title)
+                        .fontSize(14)
+                        .fontWeight(FontWeight.Medium)
+                        .fontColor(DT.textPrimary)
+                        .width('100%');
+                      Text(feature.description)
+                        .fontSize(12)
+                        .fontColor(DT.textSecondary)
+                        .width('100%');
+                    }
+                    .layoutWeight(1)
+                    .alignItems(HorizontalAlign.Start);
+                  }
+                  .width('100%')
+                  .alignItems(VerticalAlign.Top);
+                }, (feature: ProFeatureInfo) => feature.feature);
+
+                if (!this.proSnapshot.active) {
+                  Text('订阅上线后，已有的记录和导出不受影响；体验期产生的数据始终保留在你的设备本地。')
+                    .fontSize(11)
                     .fontColor(DT.textSecondary)
-                    .width('100%');
+                    .width('100%')
+                    .padding(10)
+                    .backgroundColor(DT.bgInput)
+                    .borderRadius(DT.radiusM);
                 }
-                .layoutWeight(1)
-                .alignItems(HorizontalAlign.Start);
               }
               .width('100%')
-              .alignItems(VerticalAlign.Top);
-            }, (feature: ProFeatureInfo) => feature.feature);
-
-            if (!this.proSnapshot.active) {
-              Text('订阅上线后，已有的记录和导出不受影响；体验期产生的数据始终保留在你的设备本地。')
-                .fontSize(11)
-                .fontColor(DT.textSecondary)
-                .width('100%')
-                .padding(10)
-                .backgroundColor(DT.bgInput)
-                .borderRadius(DT.radiusM);
+              .transition(TransitionEffect.OPACITY
+                .combine(TransitionEffect.translate({ y: 12 }))
+                .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
             }
           }
           .width('100%');
@@ -485,17 +544,29 @@ export struct SettingsPage {
         AppCard({ cardPadding: 18 }) {
           Column({ space: 14 }) {
             Row() {
-              Column({ space: 4 }) {
-                Text('专注氛围')
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor(DT.textPrimary);
-                Text('用时光币解锁专注中的配色')
-                  .fontSize(12)
-                  .fontColor(DT.textSecondary);
+              Row({ space: 8 }) {
+                SymbolGlyph($r('sys.symbol.chevron_right'))
+                  .fontSize(15)
+                  .fontColor([DT.textSecondary])
+                  .rotate({ angle: this.isExpanded('ambience') ? 90 : 0 })
+                  .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
+
+                Column({ space: 4 }) {
+                  Text('专注氛围')
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.textPrimary);
+                  Text('用时光币解锁专注中的配色')
+                    .fontSize(12)
+                    .fontColor(DT.textSecondary);
+                }
+                .alignItems(HorizontalAlign.Start);
               }
-              .alignItems(HorizontalAlign.Start)
-              .layoutWeight(1);
+              .layoutWeight(1)
+              .alignItems(VerticalAlign.Center)
+              .onClick(() => {
+                this.toggleSection('ambience');
+              });
 
               Text(`余额 ${this.themeSnapshot.coinBalance}`)
                 .fontSize(12)
@@ -522,6 +593,8 @@ export struct SettingsPage {
             .width('100%')
             .alignItems(VerticalAlign.Center);
 
+            if (this.isExpanded('ambience')) {
+              Column({ space: 14 }) {
             ForEach(this.themeSnapshot.items, (item: ThemeListItem) => {
               Row({ space: 12 }) {
                 Stack({ alignContent: Alignment.Center }) {
@@ -664,10 +737,16 @@ export struct SettingsPage {
               .alignItems(VerticalAlign.Center);
             }, (item: EffectListItem) => `${item.effect.id}_${item.unlocked}_${item.selected}`);
 
-            Text('动效在每段专注完成时播放一次。')
-              .fontSize(11)
-              .fontColor(DT.textSecondary)
-              .width('100%');
+                Text('动效在每段专注完成时播放一次。')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary)
+                  .width('100%');
+              }
+              .width('100%')
+              .transition(TransitionEffect.OPACITY
+                .combine(TransitionEffect.translate({ y: 12 }))
+                .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
+            }
           }
           .width('100%');
         }
@@ -675,11 +754,23 @@ export struct SettingsPage {
         AppCard({ cardPadding: 18 }) {
           Column({ space: 16 }) {
             Row() {
-              Text('客户账单')
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor(DT.textPrimary)
-                .layoutWeight(1);
+              Row({ space: 8 }) {
+                SymbolGlyph($r('sys.symbol.chevron_right'))
+                  .fontSize(15)
+                  .fontColor([DT.textSecondary])
+                  .rotate({ angle: this.isExpanded('billing') ? 90 : 0 })
+                  .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
+
+                Text('客户账单')
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.textPrimary);
+              }
+              .layoutWeight(1)
+              .alignItems(VerticalAlign.Center)
+              .onClick(() => {
+                this.toggleSection('billing');
+              });
 
               AppButton({
                 title: '默认',
@@ -694,318 +785,339 @@ export struct SettingsPage {
             .width('100%')
             .alignItems(VerticalAlign.Center);
 
-            StepperRow({
-              label: '小时费率',
-              value: `${this.billingSettings.currencySymbol}${this.billingSettings.hourlyRate}`,
-              onMinus: (): void => {
-                this.changeHourlyRate(-20);
-              },
-              onPlus: (): void => {
-                this.changeHourlyRate(20);
-              }
-            })
+            if (this.isExpanded('billing')) {
+              Column({ space: 16 }) {
+                StepperRow({
+                  label: '小时费率',
+                  value: `${this.billingSettings.currencySymbol}${this.billingSettings.hourlyRate}`,
+                  onMinus: (): void => {
+                    this.changeHourlyRate(-20);
+                  },
+                  onPlus: (): void => {
+                    this.changeHourlyRate(20);
+                  }
+                })
 
-            StepperRow({
-              label: '最小计费',
-              value: `${this.billingSettings.minimumBillableMinutes} 分钟`,
-              onMinus: (): void => {
-                this.changeMinimumBillableMinutes(-5);
-              },
-              onPlus: (): void => {
-                this.changeMinimumBillableMinutes(5);
-              }
-            })
+                StepperRow({
+                  label: '最小计费',
+                  value: `${this.billingSettings.minimumBillableMinutes} 分钟`,
+                  onMinus: (): void => {
+                    this.changeMinimumBillableMinutes(-5);
+                  },
+                  onPlus: (): void => {
+                    this.changeMinimumBillableMinutes(5);
+                  }
+                })
 
-            StepperRow({
-              label: '取整粒度',
-              value: `${this.billingSettings.roundingMinutes} 分钟`,
-              onMinus: (): void => {
-                this.changeRoundingMinutes(-5);
-              },
-              onPlus: (): void => {
-                this.changeRoundingMinutes(5);
-              }
-            })
+                StepperRow({
+                  label: '取整粒度',
+                  value: `${this.billingSettings.roundingMinutes} 分钟`,
+                  onMinus: (): void => {
+                    this.changeRoundingMinutes(-5);
+                  },
+                  onPlus: (): void => {
+                    this.changeRoundingMinutes(5);
+                  }
+                })
 
-            Column({ space: 8 }) {
-              Text('发票备注')
-                .fontSize(15)
-                .fontColor(DT.textPrimary)
-                .width('100%');
-              TextInput({ placeholder: '例如：含 6 月项目开发工时', text: this.billingSettings.invoiceNote })
-                .height(44)
-                .fontSize(13)
-                .backgroundColor(DT.bgInput)
-                .borderRadius(DT.radiusS)
-                .placeholderColor(DT.textPlaceholder)
-                .maxLength(100)
-                .onChange((value: string) => {
-                  this.updateInvoiceNote(value);
-                });
-              Text('备注会出现在账单卡片和导出的账单 CSV 中。')
-                .fontSize(11)
-                .fontColor(DT.textSecondary)
-                .width('100%');
+                Column({ space: 8 }) {
+                  Text('发票备注')
+                    .fontSize(15)
+                    .fontColor(DT.textPrimary)
+                    .width('100%');
+                  TextInput({ placeholder: '例如：含 6 月项目开发工时', text: this.billingSettings.invoiceNote })
+                    .height(44)
+                    .fontSize(13)
+                    .backgroundColor(DT.bgInput)
+                    .borderRadius(DT.radiusS)
+                    .placeholderColor(DT.textPlaceholder)
+                    .maxLength(100)
+                    .onChange((value: string) => {
+                      this.updateInvoiceNote(value);
+                    });
+                  Text('备注会出现在账单卡片和导出的账单 CSV 中。')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary)
+                    .width('100%');
+                }
+                .width('100%')
+                .alignItems(HorizontalAlign.Start);
+              }
+              .width('100%')
+              .transition(TransitionEffect.OPACITY
+                .combine(TransitionEffect.translate({ y: 12 }))
+                .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
             }
-            .width('100%')
-            .alignItems(HorizontalAlign.Start);
           }
           .width('100%');
         }
 
         AppCard({ cardPadding: 18 }) {
           Column({ space: 16 }) {
-            Text('专注节奏')
-              .fontSize(16)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(DT.textPrimary)
-              .width('100%');
+            this.sectionHeader('rhythm', '专注节奏')
 
-            StepperRow({
-              label: '专注时长',
-              value: `${this.config.focusMinutes} 分钟`,
-              onMinus: (): void => {
-                this.changeFocusMinutes(-5);
-              },
-              onPlus: (): void => {
-                this.changeFocusMinutes(5);
-              }
-            })
-
-            StepperRow({
-              label: '短歇息',
-              value: `${this.config.shortBreakMinutes} 分钟`,
-              onMinus: (): void => {
-                this.changeShortBreakMinutes(-1);
-              },
-              onPlus: (): void => {
-                this.changeShortBreakMinutes(1);
-              }
-            })
-
-            StepperRow({
-              label: '长歇息',
-              value: `${this.config.longBreakMinutes} 分钟`,
-              onMinus: (): void => {
-                this.changeLongBreakMinutes(-5);
-              },
-              onPlus: (): void => {
-                this.changeLongBreakMinutes(5);
-              }
-            })
-
-            StepperRow({
-              label: '长歇息间隔',
-              value: `${this.config.roundsBeforeLongBreak} 次`,
-              onMinus: (): void => {
-                this.changeRoundsBeforeLongBreak(-1);
-              },
-              onPlus: (): void => {
-                this.changeRoundsBeforeLongBreak(1);
-              }
-            })
-
-            StepperRow({
-              label: '每日目标',
-              value: `${this.config.dailyGoalMinutes} 分钟`,
-              onMinus: (): void => {
-                this.changeDailyGoalMinutes(-15);
-              },
-              onPlus: (): void => {
-                this.changeDailyGoalMinutes(15);
-              }
-            })
-          }
-          .width('100%');
-        }
-
-        AppCard({ cardPadding: 18 }) {
-          Column({ space: 12 }) {
-            Text('提醒')
-              .fontSize(16)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(DT.textPrimary)
-              .width('100%');
-
-            Row() {
-              Text('专注结束提醒')
-                .fontSize(15)
-                .fontColor(DT.textPrimary)
-                .layoutWeight(1);
-              Toggle({ type: ToggleType.Switch, isOn: this.config.notificationEnabled })
-                .selectedColor(DT.brand)
-                .onChange((isOn: boolean) => {
-                  this.toggleNotification(isOn);
-                });
-            }
-            .width('100%');
-
-            Row() {
-              Text('震动提醒')
-                .fontSize(15)
-                .fontColor(DT.textPrimary)
-                .layoutWeight(1);
-              Toggle({ type: ToggleType.Switch, isOn: this.config.vibrationEnabled })
-                .selectedColor(DT.brand)
-                .onChange((isOn: boolean) => {
-                  this.toggleVibration(isOn);
-                });
-            }
-            .width('100%');
-
-            Row() {
-              Text('提示音')
-                .fontSize(15)
-                .fontColor(DT.textPrimary)
-                .layoutWeight(1);
-              Toggle({ type: ToggleType.Switch, isOn: this.config.soundEnabled })
-                .selectedColor(DT.brand)
-                .onChange((isOn: boolean) => {
-                  this.toggleSound(isOn);
-                });
-            }
-            .width('100%');
-          }
-          .width('100%');
-        }
-
-        AppCard({ cardPadding: 18 }) {
-          Column({ space: 12 }) {
-            Text('专注守门')
-              .fontSize(16)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(DT.textPrimary)
-              .width('100%');
-
-            Row() {
-              Column({ space: 3 }) {
-                Text('离开 App 不可结算')
-                  .fontSize(15)
-                  .fontColor(DT.textPrimary);
-                Text('专注期间只允许栖时前台；切走或杀后台会写入违规记录')
-                  .fontSize(12)
-                  .fontColor(DT.textSecondary);
-              }
-              .alignItems(HorizontalAlign.Start)
-              .layoutWeight(1);
-
-              Text('已开启')
-                .fontSize(13)
-                .fontColor('#FFFFFF')
-                .padding({ left: 10, right: 10, top: 6, bottom: 6 })
-                .backgroundColor(DT.brand)
-                .borderRadius(DT.radiusM);
-            }
-            .width('100%')
-            .alignItems(VerticalAlign.Center);
-          }
-          .width('100%');
-        }
-
-        AppCard({ cardPadding: 18 }) {
-          Column({ space: 12 }) {
-            Text('开发调试')
-              .fontSize(16)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(DT.textPrimary)
-              .width('100%');
-
-            Row() {
-              Column({ space: 3 }) {
-                Text('显示 10 秒快速验证')
-                  .fontSize(15)
-                  .fontColor(DT.textPrimary);
-                Text('仅用于真机调试计时结束流程')
-                  .fontSize(12)
-                  .fontColor(DT.textSecondary);
-              }
-              .alignItems(HorizontalAlign.Start)
-              .layoutWeight(1);
-
-              Toggle({ type: ToggleType.Switch, isOn: this.config.debugQuickFocusEnabled })
-                .selectedColor(DT.brand)
-                .onChange((isOn: boolean) => {
-                  this.toggleQuickFocusDebug(isOn);
-                });
-            }
-            .width('100%');
-
-            Row() {
-              Column({ space: 3 }) {
-                Text('异常日志')
-                  .fontSize(15)
-                  .fontColor(DT.textPrimary);
-                Text(this.errorLogs.length > 0 ? `最近 ${this.errorLogs.length} 条提醒/存储/卡片异常` : '暂无异常记录')
-                  .fontSize(12)
-                  .fontColor(DT.textSecondary);
-              }
-              .alignItems(HorizontalAlign.Start)
-              .layoutWeight(1);
-
-              Toggle({ type: ToggleType.Switch, isOn: this.showErrorLogs })
-                .selectedColor(DT.brand)
-                .onChange((isOn: boolean) => {
-                  this.showErrorLogs = isOn;
-                  if (isOn) {
-                    this.loadErrorLogs();
+            if (this.isExpanded('rhythm')) {
+              Column({ space: 16 }) {
+                StepperRow({
+                  label: '专注时长',
+                  value: `${this.config.focusMinutes} 分钟`,
+                  onMinus: (): void => {
+                    this.changeFocusMinutes(-5);
+                  },
+                  onPlus: (): void => {
+                    this.changeFocusMinutes(5);
                   }
-                });
+                })
+
+                StepperRow({
+                  label: '短歇息',
+                  value: `${this.config.shortBreakMinutes} 分钟`,
+                  onMinus: (): void => {
+                    this.changeShortBreakMinutes(-1);
+                  },
+                  onPlus: (): void => {
+                    this.changeShortBreakMinutes(1);
+                  }
+                })
+
+                StepperRow({
+                  label: '长歇息',
+                  value: `${this.config.longBreakMinutes} 分钟`,
+                  onMinus: (): void => {
+                    this.changeLongBreakMinutes(-5);
+                  },
+                  onPlus: (): void => {
+                    this.changeLongBreakMinutes(5);
+                  }
+                })
+
+                StepperRow({
+                  label: '长歇息间隔',
+                  value: `${this.config.roundsBeforeLongBreak} 次`,
+                  onMinus: (): void => {
+                    this.changeRoundsBeforeLongBreak(-1);
+                  },
+                  onPlus: (): void => {
+                    this.changeRoundsBeforeLongBreak(1);
+                  }
+                })
+
+                StepperRow({
+                  label: '每日目标',
+                  value: `${this.config.dailyGoalMinutes} 分钟`,
+                  onMinus: (): void => {
+                    this.changeDailyGoalMinutes(-15);
+                  },
+                  onPlus: (): void => {
+                    this.changeDailyGoalMinutes(15);
+                  }
+                })
+              }
+              .width('100%')
+              .transition(TransitionEffect.OPACITY
+                .combine(TransitionEffect.translate({ y: 12 }))
+                .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
             }
-            .width('100%');
+          }
+          .width('100%');
+        }
 
-            if (this.showErrorLogs) {
-              if (this.errorLogs.length === 0) {
-                Text('提醒失败、存储失败和卡片刷新失败会记录在这里，用于排查真机问题。')
-                  .fontSize(12)
-                  .fontColor(DT.textSecondary)
-                  .width('100%')
-                  .padding(10)
-                  .backgroundColor(DT.bgInput)
-                  .borderRadius(DT.radiusM);
-              } else {
-                Column({ space: 8 }) {
-                  ForEach(this.errorLogs.slice(0, 10), (entry: ErrorLogEntry) => {
-                    Column({ space: 3 }) {
-                      Row() {
-                        Text(errorSourceLabel(entry.source))
-                          .fontSize(11)
-                          .fontColor(DT.danger)
-                          .padding({ left: 8, right: 8, top: 3, bottom: 3 })
-                          .backgroundColor(DT.bgDangerSoft)
-                          .borderRadius(9);
-                        Text(this.errorTimeText(entry.at))
-                          .fontSize(11)
-                          .fontColor(DT.textPlaceholder)
-                          .layoutWeight(1)
-                          .textAlign(TextAlign.End);
-                      }
-                      .width('100%');
+        AppCard({ cardPadding: 18 }) {
+          Column({ space: 12 }) {
+            this.sectionHeader('reminder', '提醒')
 
-                      Text(entry.message)
-                        .fontSize(12)
-                        .fontColor(DT.textPrimary)
-                        .width('100%')
-                        .maxLines(2)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis });
-                    }
-                    .width('100%')
-                    .padding(10)
-                    .backgroundColor(DT.bgInput)
-                    .borderRadius(DT.radiusM)
-                    .alignItems(HorizontalAlign.Start);
-                  }, (entry: ErrorLogEntry) => `${entry.at}-${entry.source}`);
+            if (this.isExpanded('reminder')) {
+              Column({ space: 12 }) {
+                Row() {
+                  Text('专注结束提醒')
+                    .fontSize(15)
+                    .fontColor(DT.textPrimary)
+                    .layoutWeight(1);
+                  Toggle({ type: ToggleType.Switch, isOn: this.config.notificationEnabled })
+                    .selectedColor(DT.brand)
+                    .onChange((isOn: boolean) => {
+                      this.toggleNotification(isOn);
+                    });
+                }
+                .width('100%');
 
-                  AppButton({
-                    title: '清空异常日志',
-                    variant: 'softDanger',
-                    buttonSize: 's',
-                    onTap: (): void => {
-                      this.clearErrorLogs();
-                    }
-                  })
+                Row() {
+                  Text('震动提醒')
+                    .fontSize(15)
+                    .fontColor(DT.textPrimary)
+                    .layoutWeight(1);
+                  Toggle({ type: ToggleType.Switch, isOn: this.config.vibrationEnabled })
+                    .selectedColor(DT.brand)
+                    .onChange((isOn: boolean) => {
+                      this.toggleVibration(isOn);
+                    });
+                }
+                .width('100%');
+
+                Row() {
+                  Text('提示音')
+                    .fontSize(15)
+                    .fontColor(DT.textPrimary)
+                    .layoutWeight(1);
+                  Toggle({ type: ToggleType.Switch, isOn: this.config.soundEnabled })
+                    .selectedColor(DT.brand)
+                    .onChange((isOn: boolean) => {
+                      this.toggleSound(isOn);
+                    });
                 }
                 .width('100%');
               }
+              .width('100%')
+              .transition(TransitionEffect.OPACITY
+                .combine(TransitionEffect.translate({ y: 12 }))
+                .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
+            }
+          }
+          .width('100%');
+        }
+
+        AppCard({ cardPadding: 18 }) {
+          Column({ space: 12 }) {
+            this.sectionHeader('guard', '专注守门')
+
+            if (this.isExpanded('guard')) {
+              Row() {
+                Column({ space: 3 }) {
+                  Text('离开 App 不可结算')
+                    .fontSize(15)
+                    .fontColor(DT.textPrimary);
+                  Text('专注期间只允许栖时前台；切走或杀后台会写入违规记录')
+                    .fontSize(12)
+                    .fontColor(DT.textSecondary);
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1);
+
+                Text('已开启')
+                  .fontSize(13)
+                  .fontColor('#FFFFFF')
+                  .padding({ left: 10, right: 10, top: 6, bottom: 6 })
+                  .backgroundColor(DT.brand)
+                  .borderRadius(DT.radiusM);
+              }
+              .width('100%')
+              .alignItems(VerticalAlign.Center)
+              .transition(TransitionEffect.OPACITY
+                .combine(TransitionEffect.translate({ y: 12 }))
+                .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
+            }
+          }
+          .width('100%');
+        }
+
+        AppCard({ cardPadding: 18 }) {
+          Column({ space: 12 }) {
+            this.sectionHeader('debug', '开发调试')
+
+            if (this.isExpanded('debug')) {
+              Column({ space: 12 }) {
+                Row() {
+                  Column({ space: 3 }) {
+                    Text('显示 10 秒快速验证')
+                      .fontSize(15)
+                      .fontColor(DT.textPrimary);
+                    Text('仅用于真机调试计时结束流程')
+                      .fontSize(12)
+                      .fontColor(DT.textSecondary);
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1);
+
+                  Toggle({ type: ToggleType.Switch, isOn: this.config.debugQuickFocusEnabled })
+                    .selectedColor(DT.brand)
+                    .onChange((isOn: boolean) => {
+                      this.toggleQuickFocusDebug(isOn);
+                    });
+                }
+                .width('100%');
+
+                Row() {
+                  Column({ space: 3 }) {
+                    Text('异常日志')
+                      .fontSize(15)
+                      .fontColor(DT.textPrimary);
+                    Text(this.errorLogs.length > 0 ? `最近 ${this.errorLogs.length} 条提醒/存储/卡片异常` : '暂无异常记录')
+                      .fontSize(12)
+                      .fontColor(DT.textSecondary);
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1);
+
+                  Toggle({ type: ToggleType.Switch, isOn: this.showErrorLogs })
+                    .selectedColor(DT.brand)
+                    .onChange((isOn: boolean) => {
+                      this.showErrorLogs = isOn;
+                      if (isOn) {
+                        this.loadErrorLogs();
+                      }
+                    });
+                }
+                .width('100%');
+
+                if (this.showErrorLogs) {
+                  if (this.errorLogs.length === 0) {
+                    Text('提醒失败、存储失败和卡片刷新失败会记录在这里，用于排查真机问题。')
+                      .fontSize(12)
+                      .fontColor(DT.textSecondary)
+                      .width('100%')
+                      .padding(10)
+                      .backgroundColor(DT.bgInput)
+                      .borderRadius(DT.radiusM);
+                  } else {
+                    Column({ space: 8 }) {
+                      ForEach(this.errorLogs.slice(0, 10), (entry: ErrorLogEntry) => {
+                        Column({ space: 3 }) {
+                          Row() {
+                            Text(errorSourceLabel(entry.source))
+                              .fontSize(11)
+                              .fontColor(DT.danger)
+                              .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+                              .backgroundColor(DT.bgDangerSoft)
+                              .borderRadius(9);
+                            Text(this.errorTimeText(entry.at))
+                              .fontSize(11)
+                              .fontColor(DT.textPlaceholder)
+                              .layoutWeight(1)
+                              .textAlign(TextAlign.End);
+                          }
+                          .width('100%');
+
+                          Text(entry.message)
+                            .fontSize(12)
+                            .fontColor(DT.textPrimary)
+                            .width('100%')
+                            .maxLines(2)
+                            .textOverflow({ overflow: TextOverflow.Ellipsis });
+                        }
+                        .width('100%')
+                        .padding(10)
+                        .backgroundColor(DT.bgInput)
+                        .borderRadius(DT.radiusM)
+                        .alignItems(HorizontalAlign.Start);
+                      }, (entry: ErrorLogEntry) => `${entry.at}-${entry.source}`);
+
+                      AppButton({
+                        title: '清空异常日志',
+                        variant: 'softDanger',
+                        buttonSize: 's',
+                        onTap: (): void => {
+                          this.clearErrorLogs();
+                        }
+                      })
+                    }
+                    .width('100%');
+                  }
+                }
+              }
+              .width('100%')
+              .transition(TransitionEffect.OPACITY
+                .combine(TransitionEffect.translate({ y: 12 }))
+                .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
             }
           }
           .width('100%');
