@@ -9,7 +9,7 @@ import { FocusEffect } from '../utils/focusEffectCore';
 export struct CompletionEffect {
   @Prop effect: FocusEffect;
   // 用外部递增的播放序号触发重播（同一次完成只播一次）。
-  @Prop playToken: number = 0;
+  @Prop @Watch('onPlayTokenChange') playToken: number = 0;
   @State ringScale: number = 0.4;
   @State ringOpacity: number = 0;
   @State secondWaveScale: number = 0.4;
@@ -18,9 +18,33 @@ export struct CompletionEffect {
   @State haloOpacity: number = 0;
   @State symbolScale: number = 0.2;
   @State symbolOpacity: number = 0;
+  private playTimer: number = -1;
 
   aboutToAppear(): void {
-    this.play();
+    // 延迟到首帧布局完成后再播：挂载同帧发起 animateTo 会被吞掉，
+    // 状态直接落到终值（透明度 0），涟漪整段不可见。
+    this.schedulePlay();
+  }
+
+  aboutToDisappear(): void {
+    if (this.playTimer !== -1) {
+      clearTimeout(this.playTimer);
+      this.playTimer = -1;
+    }
+  }
+
+  onPlayTokenChange(): void {
+    this.schedulePlay();
+  }
+
+  private schedulePlay(): void {
+    if (this.playTimer !== -1) {
+      clearTimeout(this.playTimer);
+    }
+    this.playTimer = setTimeout(() => {
+      this.playTimer = -1;
+      this.play();
+    }, 80);
   }
 
   private play(): void {

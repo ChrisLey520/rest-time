@@ -7,15 +7,14 @@ import { PromptService } from '../services/PromptService';
 import { DT } from '../utils/designTokens';
 
 interface TabItemMeta {
-  symbol: string;
   label: string;
 }
 
 const TAB_ITEMS: TabItemMeta[] = [
-  { symbol: '◉', label: '专注' },
-  { symbol: '☰', label: '任务' },
-  { symbol: '▤', label: '记录' },
-  { symbol: '⚙', label: '设置' }
+  { label: '专注' },
+  { label: '任务' },
+  { label: '记录' },
+  { label: '设置' }
 ];
 
 @Entry
@@ -87,7 +86,7 @@ struct Index {
 
   @Builder
   tabItem(index: number) {
-    Column({ space: 3 }) {
+    Column({ space: 5 }) {
       // 选中指示条：随选中态渐显。
       Row()
         .width(20)
@@ -95,18 +94,14 @@ struct Index {
         .backgroundColor(this.selectedIndex === index ? this.tabActiveColor() : DT.transparent)
         .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
         .borderRadius(2);
-      Text(TAB_ITEMS[index].symbol)
-        .fontSize(17)
-        .fontColor(this.selectedIndex === index ? this.tabActiveColor() : this.tabInactiveColor())
-        .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
       Text(TAB_ITEMS[index].label)
-        .fontSize(DT.fontCaption)
+        .fontSize(14)
         .fontWeight(this.selectedIndex === index ? FontWeight.Medium : FontWeight.Normal)
         .fontColor(this.selectedIndex === index ? this.tabActiveColor() : this.tabInactiveColor())
         .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
     }
     .width('100%')
-    .padding({ top: 4, bottom: 4 })
+    .padding({ top: 6, bottom: 6 })
     .alignItems(HorizontalAlign.Center)
     .justifyContent(FlexAlign.Center);
   }
