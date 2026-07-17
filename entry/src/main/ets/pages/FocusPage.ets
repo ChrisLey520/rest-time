@@ -1,6 +1,8 @@
-import { PrimaryButton } from '../components/PrimaryButton';
+import { AppButton } from '../components/AppButton';
+import { AppCard } from '../components/AppCard';
+import { AnimatedProgressBar } from '../components/AnimatedProgressBar';
 import { SessionPreviewList } from '../components/SessionPreviewList';
-import { TimerDisplay } from '../components/TimerDisplay';
+import { TimerRing } from '../components/TimerRing';
 import { FocusAbandonReason } from '../models/FocusSession';
 import { FocusSession } from '../models/FocusSession';
 import { idleTimerState, TimerState } from '../models/TimerState';
@@ -22,6 +24,8 @@ import { CompletionEffect } from '../components/CompletionEffect';
 import { FocusEffect, FocusTheme, FocusThemeService } from '../services/FocusThemeService';
 import { findFocusEffect } from '../utils/focusEffectCore';
 import { findFocusTheme } from '../utils/focusThemeCore';
+import { DT } from '../utils/designTokens';
+import { SurfaceStyle, surfaceFor } from '../utils/themePalette';
 import { TIME_COIN_DAILY_CAP, earnedTimeCoinsToday } from '../utils/timeCoinCore';
 import {
   createTomorrowFirst,
@@ -448,15 +452,15 @@ export struct FocusPage {
         buttons: [
           {
             text: '累了',
-            color: '#5F9E8A'
+            color: DT.brand
           },
           {
             text: '卡住了',
-            color: '#4D7EA8'
+            color: DT.info
           },
           {
             text: '分心了',
-            color: '#C96F5D'
+            color: DT.danger
           }
         ]
       });
@@ -489,11 +493,11 @@ export struct FocusPage {
       buttons: [
         {
           text: this.timerState.mode === 'break' ? '继续歇息' : '继续专注',
-          color: '#5F9E8A'
+          color: DT.brand
         },
         {
           text: '结束本次',
-          color: '#C96F5D'
+          color: DT.danger
         }
       ]
     });
@@ -512,11 +516,11 @@ export struct FocusPage {
       buttons: [
         {
           text: '回去继续',
-          color: '#5F9E8A'
+          color: DT.brand
         },
         {
           text: '留下下一步',
-          color: '#C96F5D'
+          color: DT.danger
         }
       ]
     });
@@ -600,12 +604,11 @@ export struct FocusPage {
     return `还差 ${formatDuration(this.goalStats.remainingSeconds)}`;
   }
 
-  private goalProgressWidth(): string {
-    return `${this.goalStats.progressPercent}%`;
-  }
-
   private goalProgressColor(): string {
-    return this.goalStats.isCompleted ? '#4D7EA8' : '#5F9E8A';
+    if (this.isThemeActive()) {
+      return this.focusTheme.accentColor;
+    }
+    return this.goalStats.isCompleted ? DT.info : DT.brand;
   }
 
   private remainingTaskFocusCount(): number {
@@ -666,11 +669,10 @@ export struct FocusPage {
     return `${this.todayTimeCoins}/${TIME_COIN_DAILY_CAP}`;
   }
 
-  private timeCoinProgressWidth(): string {
-    const progress = TIME_COIN_DAILY_CAP > 0
+  private timeCoinProgressPercent(): number {
+    return TIME_COIN_DAILY_CAP > 0
       ? Math.min(100, Math.floor(this.todayTimeCoins * 100 / TIME_COIN_DAILY_CAP))
       : 100;
-    return `${progress}%`;
   }
 
   private recoveryAnchorSession(): FocusSession | undefined {
@@ -906,34 +908,34 @@ export struct FocusPage {
 
   private starterPlanAccentColor(): string {
     if (this.starterPlan.reason === 'long_absence') {
-      return '#5F9E8A';
+      return DT.brand;
     }
 
     if (this.starterPlan.riskLevel === 'high') {
-      return '#C96F5D';
+      return DT.danger;
     }
 
     if (this.starterPlan.riskLevel === 'medium') {
-      return '#4D7EA8';
+      return DT.info;
     }
 
-    return '#5F9E8A';
+    return DT.brand;
   }
 
   private starterPlanCardBgColor(): string {
     if (this.starterPlan.reason === 'long_absence') {
-      return '#EAF3F0';
+      return DT.bgBrandSoft;
     }
 
     if (this.starterPlan.riskLevel === 'high') {
-      return '#FFF8F6';
+      return DT.bgDangerSoft;
     }
 
     if (this.starterPlan.riskLevel === 'medium') {
-      return '#EAF2F8';
+      return DT.bgInfoSoft;
     }
 
-    return '#EAF3F0';
+    return DT.bgBrandSoft;
   }
 
   private shouldShowStarterPlanCard(): boolean {
@@ -960,25 +962,21 @@ export struct FocusPage {
     return this.timerState.mode === 'break';
   }
 
-  // 计时会话中整页走主题配色；其余状态保持日常浅色。
-  private themeCardColor(): string {
-    return this.isThemeActive() ? this.focusTheme.cardColor : '#FFFFFF';
-  }
-
-  private themeCardBorderColor(): string {
-    return this.isThemeActive() ? this.focusTheme.cardColor : '#DDE8EA';
+  // 当前卡片表面样式：主题激活时按深浅色出渐变与阴影。
+  private currentSurface(): SurfaceStyle {
+    return surfaceFor(this.focusTheme, this.isThemeActive());
   }
 
   private themeInnerCardColor(): string {
-    return this.isThemeActive() ? this.focusTheme.backgroundColor : '#F6F8F7';
+    return this.isThemeActive() ? this.focusTheme.backgroundColor : DT.bgInput;
   }
 
   private themePrimaryTextColor(): string {
-    return this.isThemeActive() ? this.focusTheme.timerColor : '#1F2A2A';
+    return this.isThemeActive() ? this.focusTheme.timerColor : DT.textPrimary;
   }
 
   private themeSecondaryTextColor(): string {
-    return this.isThemeActive() ? this.focusTheme.accentColor : '#7B8785';
+    return this.isThemeActive() ? this.focusTheme.accentColor : DT.textSecondary;
   }
 
   private themeAccentColor(fallback: string): string {
@@ -1163,257 +1161,237 @@ export struct FocusPage {
         Row() {
           Column({ space: 4 }) {
             Text('栖时')
-              .fontSize(28)
+              .fontSize(DT.fontDisplay)
               .fontWeight(FontWeight.Bold)
-              .fontColor(this.isThemeActive() ? this.focusTheme.timerColor : '#1F2A2A');
+              .fontColor(this.isThemeActive() ? this.focusTheme.timerColor : DT.textPrimary)
+              .animation({ duration: DT.durSlow, curve: Curve.EaseInOut });
             Text('安放每一个专注时刻')
               .fontSize(14)
-              .fontColor(this.isThemeActive() ? this.focusTheme.accentColor : '#7B8785');
+              .fontColor(this.isThemeActive() ? this.focusTheme.accentColor : DT.textSecondary)
+              .animation({ duration: DT.durSlow, curve: Curve.EaseInOut });
             Text(`今日 ${Math.floor(this.todayStats.focusSeconds / 60)} 分钟 / ${this.todayStats.completedFocusCount} 次`)
               .fontSize(13)
-              .fontColor(this.isThemeActive() ? this.focusTheme.accentColor : '#7B8785');
+              .fontColor(this.isThemeActive() ? this.focusTheme.accentColor : DT.textSecondary)
+              .animation({ duration: DT.durSlow, curve: Curve.EaseInOut });
           }
           .alignItems(HorizontalAlign.Start)
           .layoutWeight(1);
 
           Text(this.statusText())
             .fontSize(13)
-            .fontColor(this.isThemeActive() ? this.focusTheme.backgroundColor : '#5F9E8A')
+            .fontColor(this.isThemeActive() ? this.focusTheme.backgroundColor : DT.brandDeep)
+            .backgroundColor(this.isThemeActive() ? this.focusTheme.accentColor : DT.bgBrandSoft)
+            .animation({ duration: DT.durSlow, curve: Curve.EaseInOut })
             .padding({ left: 12, right: 12, top: 7, bottom: 7 })
-            .backgroundColor(this.isThemeActive() ? this.focusTheme.accentColor : '#EAF3F0')
             .borderRadius(14);
         }
         .width('100%');
 
         if (!this.isThemeActive()) {
-          Column({ space: 14 }) {
+          AppCard({ cardPadding: 16 }) {
+            Column({ space: 14 }) {
+              Row() {
+                Column({ space: 5 }) {
+                  Text('今日计划')
+                    .fontSize(15)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.textSecondary);
+                  Text(this.planTitle())
+                    .fontSize(20)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(DT.textPrimary)
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis });
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1);
+
+                AppButton({
+                  title: this.activeTasks.length === 0 ? '新建任务' : '查看任务',
+                  variant: 'info',
+                  buttonSize: 's',
+                  stretch: false,
+                  onTap: () => {
+                    AppStateService.setSelectedTabIndex(1);
+                  }
+                });
+              }
+              .width('100%')
+              .alignItems(VerticalAlign.Center);
+
+              Text(this.planDescription())
+                .fontSize(13)
+                .fontColor(DT.textSecondary)
+                .width('100%');
+
+              if (this.nextTaskHintText()) {
+                Text(this.nextTaskHintText())
+                  .fontSize(12)
+                  .fontColor(DT.info)
+                  .width('100%')
+                  .padding(10)
+                  .backgroundColor(DT.bgInfoSoft)
+                  .borderRadius(12);
+              }
+
+              Row({ space: 10 }) {
+                Column({ space: 3 }) {
+                  Text(this.taskBacklogText())
+                    .fontSize(17)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.textPrimary);
+                  Text('待办投入')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(this.streakText())
+                    .fontSize(17)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.brand);
+                  Text('连续专注')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(this.bestFocusHourText())
+                    .fontSize(17)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.info);
+                  Text('高效时段')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+              }
+              .width('100%');
+
+              Row({ space: 10 }) {
+                Column({ space: 3 }) {
+                  Text(this.suggestedTodayText())
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.textPrimary);
+                  Text('今日建议')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(this.carryoverText())
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.info);
+                  Text('明日结转')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(this.weeklyRemainingText())
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.brand);
+                  Text('本周还差')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+              }
+              .width('100%');
+            }
+            .width('100%');
+          }
+        }
+
+        AppCard({ surface: this.currentSurface(), cardPadding: 16 }) {
+          Column({ space: 10 }) {
             Row() {
-              Column({ space: 5 }) {
-                Text('今日计划')
-                  .fontSize(15)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#7B8785');
-                Text(this.planTitle())
+              Column({ space: 3 }) {
+                Text('今日目标')
+                  .fontSize(14)
+                  .fontColor(this.themeSecondaryTextColor())
+                  .animation({ duration: DT.durSlow, curve: Curve.EaseInOut });
+                Text(`${Math.floor(this.todayStats.focusSeconds / 60)} / ${this.goalStats.goalMinutes} 分钟`)
                   .fontSize(20)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor('#1F2A2A')
-                  .maxLines(1)
-                  .textOverflow({ overflow: TextOverflow.Ellipsis });
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(this.themePrimaryTextColor())
+                  .animation({ duration: DT.durSlow, curve: Curve.EaseInOut });
               }
               .alignItems(HorizontalAlign.Start)
               .layoutWeight(1);
 
-              Button(this.activeTasks.length === 0 ? '新建任务' : '查看任务')
-                .height(36)
-                .fontSize(13)
-                .fontColor('#FFFFFF')
-                .backgroundColor('#4D7EA8')
-                .borderRadius(12)
-                .onClick(() => {
-                  AppStateService.setSelectedTabIndex(1);
-                });
-            }
-            .width('100%')
-            .alignItems(VerticalAlign.Center);
-
-            Text(this.planDescription())
-              .fontSize(13)
-              .fontColor('#7B8785')
-              .width('100%');
-
-            if (this.nextTaskHintText()) {
-              Text(this.nextTaskHintText())
-                .fontSize(12)
-                .fontColor('#4D7EA8')
-                .width('100%')
-                .padding(10)
-                .backgroundColor('#EAF2F8')
-                .borderRadius(12);
-            }
-
-            Row({ space: 10 }) {
-              Column({ space: 3 }) {
-                Text(this.taskBacklogText())
-                  .fontSize(17)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#1F2A2A');
-                Text('待办投入')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-
-              Column({ space: 3 }) {
-                Text(this.streakText())
-                  .fontSize(17)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#5F9E8A');
-                Text('连续专注')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-
-              Column({ space: 3 }) {
-                Text(this.bestFocusHourText())
-                  .fontSize(17)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#4D7EA8');
-                Text('高效时段')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-            }
-            .width('100%');
-
-            Row({ space: 10 }) {
-              Column({ space: 3 }) {
-                Text(this.suggestedTodayText())
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#1F2A2A');
-                Text('今日建议')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-
-              Column({ space: 3 }) {
-                Text(this.carryoverText())
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#4D7EA8');
-                Text('明日结转')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-
-              Column({ space: 3 }) {
-                Text(this.weeklyRemainingText())
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#5F9E8A');
-                Text('本周还差')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-            }
-            .width('100%');
-          }
-          .width('100%')
-          .padding(16)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(18)
-          .border({
-            width: 1,
-            color: '#DDE8EA'
-          });
-        }
-
-        Column({ space: 10 }) {
-          Row() {
-            Column({ space: 3 }) {
-              Text('今日目标')
-                .fontSize(14)
-                .fontColor('#7B8785');
-              Text(`${Math.floor(this.todayStats.focusSeconds / 60)} / ${this.goalStats.goalMinutes} 分钟`)
-                .fontSize(20)
+              Text(`${this.goalStats.progressPercent}%`)
+                .fontSize(18)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1F2A2A');
+                .fontColor(this.goalProgressColor())
+                .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
             }
-            .alignItems(HorizontalAlign.Start)
-            .layoutWeight(1);
+            .width('100%');
 
-            Text(`${this.goalStats.progressPercent}%`)
-              .fontSize(18)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(this.goalProgressColor());
+            AnimatedProgressBar({
+              percent: this.goalStats.progressPercent,
+              barColor: this.goalProgressColor(),
+              trackColor: this.isThemeActive() ? this.focusTheme.backgroundColor : DT.track,
+              barHeight: 9
+            });
+
+            Row() {
+              Text(this.goalStatusText())
+                .fontSize(13)
+                .fontColor(this.themeSecondaryTextColor())
+                .layoutWeight(1);
+              Text(`完成 ${this.todayStats.completedFocusCount} 次`)
+                .fontSize(13)
+                .fontColor(this.themeSecondaryTextColor());
+            }
+            .width('100%');
+
+            Row() {
+              Text(`时光币 ${this.timeCoinText()}`)
+                .fontSize(13)
+                .fontColor(this.isThemeActive() ? this.focusTheme.accentColor : DT.info)
+                .layoutWeight(1);
+              Text('完整守住就有奖励，越长越多')
+                .fontSize(12)
+                .fontColor(this.themeSecondaryTextColor());
+            }
+            .width('100%');
+
+            AnimatedProgressBar({
+              percent: this.timeCoinProgressPercent(),
+              barColor: this.isThemeActive() ? this.focusTheme.accentColor : DT.info,
+              trackColor: this.isThemeActive() ? this.focusTheme.backgroundColor : DT.bgInfoSoft,
+              barHeight: 7
+            });
           }
           .width('100%');
-
-          Stack({ alignContent: Alignment.Start }) {
-            Row()
-              .width('100%')
-              .height(9)
-              .backgroundColor('#EEF3F2')
-              .borderRadius(5);
-
-            Row()
-              .width(this.goalProgressWidth())
-              .height(9)
-              .backgroundColor(this.goalProgressColor())
-              .borderRadius(5);
-          }
-          .width('100%')
-          .height(9);
-
-          Row() {
-            Text(this.goalStatusText())
-              .fontSize(13)
-              .fontColor('#7B8785')
-              .layoutWeight(1);
-            Text(`完成 ${this.todayStats.completedFocusCount} 次`)
-              .fontSize(13)
-              .fontColor('#7B8785');
-          }
-          .width('100%');
-
-          Row() {
-            Text(`时光币 ${this.timeCoinText()}`)
-              .fontSize(13)
-              .fontColor('#4D7EA8')
-              .layoutWeight(1);
-            Text('完整守住就有奖励，越长越多')
-              .fontSize(12)
-              .fontColor('#7B8785');
-          }
-          .width('100%');
-
-          Stack({ alignContent: Alignment.Start }) {
-            Row()
-              .width('100%')
-              .height(7)
-              .backgroundColor('#EAF2F8')
-              .borderRadius(4);
-
-            Row()
-              .width(this.timeCoinProgressWidth())
-              .height(7)
-              .backgroundColor('#4D7EA8')
-              .borderRadius(4);
-          }
-          .width('100%')
-          .height(7);
         }
-        .width('100%')
-        .padding(16)
-        .backgroundColor('#FFFFFF')
-        .borderRadius(18)
-        .border({
-          width: 1,
-          color: '#DDE8EA'
-        });
 
         Column({ space: 20 }) {
           Text(this.selectedTaskTitle())
             .fontSize(18)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#1F2A2A');
+            .fontColor(this.themePrimaryTextColor())
+            .animation({ duration: DT.durSlow, curve: Curve.EaseInOut });
 
           if (this.timerState.status === 'idle' && this.timerState.mode === 'focus') {
             Column({ space: 8 }) {
               Text('选择任务')
                 .fontSize(13)
-                .fontColor('#7B8785')
+                .fontColor(DT.textSecondary)
                 .width('100%');
 
               if (this.activeTasks.length === 0) {
@@ -1421,36 +1399,38 @@ export struct FocusPage {
                   TextInput({ placeholder: '写下一件事，直接开始', text: this.quickTaskTitle })
                     .height(44)
                     .fontSize(15)
-                    .fontColor('#1F2A2A')
-                    .placeholderColor('#9AA6A3')
-                    .backgroundColor('#F6F8F7')
-                    .borderRadius(12)
+                    .fontColor(DT.textPrimary)
+                    .placeholderColor(DT.textPlaceholder)
+                    .backgroundColor(DT.bgInput)
+                    .borderRadius(DT.radiusS)
                     .onChange((value: string) => {
                       this.quickTaskTitle = value;
                     });
 
                   Row({ space: 10 }) {
-                    Button('写入并开始')
-                      .height(42)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#FFFFFF')
-                      .backgroundColor('#5F9E8A')
-                      .borderRadius(14)
-                      .onClick(() => {
-                        this.onCreateQuickTaskAndStart();
+                    Column() {
+                      AppButton({
+                        title: '写入并开始',
+                        variant: 'primary',
+                        buttonSize: 'm',
+                        onTap: () => {
+                          this.onCreateQuickTaskAndStart();
+                        }
                       });
+                    }
+                    .layoutWeight(1);
 
-                    Button('自由专注')
-                      .height(42)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#1F2A2A')
-                      .backgroundColor('#DDE8EA')
-                      .borderRadius(14)
-                      .onClick(() => {
-                        this.onStartStarterPlan();
+                    Column() {
+                      AppButton({
+                        title: '自由专注',
+                        variant: 'soft',
+                        buttonSize: 'm',
+                        onTap: () => {
+                          this.onStartStarterPlan();
+                        }
                       });
+                    }
+                    .layoutWeight(1);
                   }
                   .width('100%');
                 }
@@ -1460,7 +1440,7 @@ export struct FocusPage {
                   .selected(this.selectedTaskIndex + 1)
                   .value(this.selectedTaskTitle())
                   .font({ size: 15 })
-                  .fontColor('#1F2A2A')
+                  .fontColor(DT.textPrimary)
                   .selectedOptionFont({ size: 15 })
                   .optionFont({ size: 15 })
                   .onSelect((index: number) => {
@@ -1468,16 +1448,20 @@ export struct FocusPage {
                   })
                   .width('100%')
                   .height(44)
-                  .backgroundColor('#F6F8F7')
-                  .borderRadius(12);
+                  .backgroundColor(DT.bgInput)
+                  .borderRadius(DT.radiusS);
               }
             }
             .width('100%');
           }
 
-          TimerDisplay({
+          TimerRing({
             remainingSeconds: this.remainingSeconds,
-            timerColor: this.isThemeActive() ? this.focusTheme.timerColor : '#1F2A2A',
+            totalSeconds: this.timerState.durationSeconds,
+            running: this.timerState.status === 'running',
+            ringColor: this.isThemeActive() ? this.focusTheme.accentColor : DT.brand,
+            trackColor: this.isThemeActive() ? this.focusTheme.backgroundColor : DT.track,
+            digitColor: this.isThemeActive() ? this.focusTheme.timerColor : DT.textPrimary,
             glowColor: this.isThemeActive() && this.focusTheme.timerGlowColor ? this.focusTheme.timerGlowColor : ''
           });
 
@@ -1488,105 +1472,105 @@ export struct FocusPage {
                   Text('明天先做哪件？')
                     .fontSize(15)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor('#1F2A2A')
+                    .fontColor(DT.textPrimary)
                     .width('100%');
 
                   Text('写一句留给明天的自己，明早打开就能直接开始。')
                     .fontSize(12)
-                    .fontColor('#7B8785')
+                    .fontColor(DT.textSecondary)
                     .width('100%');
 
                   TextInput({ placeholder: '例如：写完第三章开头', text: this.tomorrowFirstDraft })
                     .height(44)
                     .fontSize(14)
                     .maxLength(30)
-                    .backgroundColor('#F6F8F7')
-                    .borderRadius(12)
+                    .backgroundColor('#FFFFFF')
+                    .borderRadius(DT.radiusS)
                     .onChange((value: string) => {
                       this.tomorrowFirstDraft = value;
                     });
 
                   Row({ space: 10 }) {
-                    Button('留给明天')
-                      .height(42)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#FFFFFF')
-                      .backgroundColor('#5F9E8A')
-                      .borderRadius(14)
-                      .onClick(() => {
-                        this.onSaveTomorrowFirst();
+                    Column() {
+                      AppButton({
+                        title: '留给明天',
+                        variant: 'primary',
+                        buttonSize: 'm',
+                        onTap: () => {
+                          this.onSaveTomorrowFirst();
+                        }
                       });
+                    }
+                    .layoutWeight(1);
 
-                    Button('先不写')
-                      .height(42)
-                      .fontSize(13)
-                      .fontColor('#7B8785')
-                      .backgroundColor('#F1F3F2')
-                      .borderRadius(14)
-                      .onClick(() => {
+                    AppButton({
+                      title: '先不写',
+                      variant: 'ghost',
+                      buttonSize: 'm',
+                      stretch: false,
+                      onTap: () => {
                         this.onSkipTomorrowFirst();
-                      });
+                      }
+                    });
                   }
                   .width('100%');
                 }
                 .width('100%')
                 .padding(14)
-                .backgroundColor('#EAF3F0')
-                .borderRadius(16)
-                .border({
-                  width: 1,
-                  color: '#CFE5DC'
-                });
+                .backgroundColor(DT.bgBrandSoft)
+                .borderRadius(DT.radiusL)
+                .transition(TransitionEffect.OPACITY
+                  .combine(TransitionEffect.translate({ y: 12 }))
+                  .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
               }
 
               if (this.isTomorrowFirstReady() && !this.shouldShowLowPointRestart() && !this.showTomorrowFirstForm) {
                 Column({ space: 8 }) {
                   Text(this.tomorrowFirstTitle())
                     .fontSize(13)
-                    .fontColor('#5F9E8A')
+                    .fontColor(DT.brandDeep)
                     .width('100%');
 
                   Text(this.tomorrowFirst ? this.tomorrowFirst.text : '')
                     .fontSize(17)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor('#1F2A2A')
+                    .fontColor(DT.textPrimary)
                     .width('100%')
                     .maxLines(2)
                     .textOverflow({ overflow: TextOverflow.Ellipsis });
 
                   Row({ space: 10 }) {
-                    Button('就做这件')
-                      .height(42)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#FFFFFF')
-                      .backgroundColor('#5F9E8A')
-                      .borderRadius(14)
-                      .onClick(() => {
-                        this.onStartTomorrowFirst();
+                    Column() {
+                      AppButton({
+                        title: '就做这件',
+                        variant: 'primary',
+                        buttonSize: 'm',
+                        onTap: () => {
+                          this.onStartTomorrowFirst();
+                        }
                       });
+                    }
+                    .layoutWeight(1);
 
-                    Button('换一件')
-                      .height(42)
-                      .fontSize(13)
-                      .fontColor('#7B8785')
-                      .backgroundColor('#F1F3F2')
-                      .borderRadius(14)
-                      .onClick(() => {
+                    AppButton({
+                      title: '换一件',
+                      variant: 'ghost',
+                      buttonSize: 'm',
+                      stretch: false,
+                      onTap: () => {
                         this.onDismissTomorrowFirst();
-                      });
+                      }
+                    });
                   }
                   .width('100%');
                 }
                 .width('100%')
                 .padding(14)
-                .backgroundColor('#EAF3F0')
-                .borderRadius(16)
-                .border({
-                  width: 1,
-                  color: '#CFE5DC'
-                });
+                .backgroundColor(DT.bgBrandSoft)
+                .borderRadius(DT.radiusL)
+                .transition(TransitionEffect.OPACITY
+                  .combine(TransitionEffect.translate({ y: 12 }))
+                  .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
               }
 
               if (this.shouldShowLowPointRestart()) {
@@ -1594,33 +1578,30 @@ export struct FocusPage {
                   Text(this.lowPointRestartTitle())
                     .fontSize(16)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor('#1F2A2A')
+                    .fontColor(DT.textPrimary)
                     .width('100%');
 
                   Text(this.lowPointRestartReasonText())
                     .fontSize(13)
-                    .fontColor('#7B8785')
+                    .fontColor(DT.textSecondary)
                     .width('100%');
 
-                  Button(`${this.recoveryLadderMinutes()} 分钟恢复`)
-                    .height(44)
-                    .width('100%')
-                    .fontSize(15)
-                    .fontColor('#FFFFFF')
-                    .backgroundColor('#4D7EA8')
-                    .borderRadius(14)
-                    .onClick(() => {
+                  AppButton({
+                    title: `${this.recoveryLadderMinutes()} 分钟恢复`,
+                    variant: 'info',
+                    buttonSize: 'm',
+                    onTap: () => {
                       this.onRestartLastAbandoned();
-                    });
+                    }
+                  });
                 }
                 .width('100%')
                 .padding(14)
-                .backgroundColor('#EAF2F8')
-                .borderRadius(16)
-                .border({
-                  width: 1,
-                  color: '#CFE0EB'
-                });
+                .backgroundColor(DT.bgInfoSoft)
+                .borderRadius(DT.radiusL)
+                .transition(TransitionEffect.OPACITY
+                  .combine(TransitionEffect.translate({ y: 12 }))
+                  .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
               }
 
               if (this.shouldShowStarterPlanCard()) {
@@ -1629,7 +1610,7 @@ export struct FocusPage {
                     Text(this.starterPlan.headline)
                       .fontSize(16)
                       .fontWeight(FontWeight.Medium)
-                      .fontColor('#1F2A2A')
+                      .fontColor(DT.textPrimary)
                       .layoutWeight(1);
 
                     Text(this.starterPlan.guardLabel)
@@ -1637,37 +1618,34 @@ export struct FocusPage {
                       .fontColor(this.starterPlanAccentColor())
                       .padding({ left: 8, right: 8, top: 4, bottom: 4 })
                       .backgroundColor('#FFFFFF')
-                      .borderRadius(10);
+                      .borderRadius(DT.radiusS);
                   }
                   .width('100%')
                   .alignItems(VerticalAlign.Center);
 
                   Text(this.starterPlan.description)
                     .fontSize(13)
-                    .fontColor('#7B8785')
+                    .fontColor(DT.textSecondary)
                     .width('100%');
 
                   if (this.starterPlan.reason === 'long_absence') {
                     Text('节奏比连续更重要，上次的记录都还在。')
                       .fontSize(11)
-                      .fontColor('#5F9E8A')
+                      .fontColor(DT.brand)
                       .width('100%');
                   }
                 }
                 .width('100%')
                 .padding(14)
                 .backgroundColor(this.starterPlanCardBgColor())
-                .borderRadius(16)
-                .border({
-                  width: 1,
-                  color: '#DDE8EA'
-                });
+                .borderRadius(DT.radiusL);
               }
 
               if (this.activeTasks.length > 0) {
-                PrimaryButton({
+                AppButton({
                   title: this.starterPlanButtonTitle(),
-                  buttonEnabled: true,
+                  variant: 'primary',
+                  buttonSize: 'l',
                   onTap: () => {
                     this.onStartStarterPlan();
                   }
@@ -1675,37 +1653,25 @@ export struct FocusPage {
               }
 
               if (this.starterPlan.riskLevel !== 'low') {
-                Button('仍然开始完整专注')
-                  .height(42)
-                  .width('100%')
-                  .fontSize(14)
-                  .fontColor('#4D7EA8')
-                  .backgroundColor('#FFFFFF')
-                  .borderRadius(14)
-                  .border({
-                    width: 1,
-                    color: '#CFE0EB'
-                  })
-                  .onClick(() => {
+                AppButton({
+                  title: '仍然开始完整专注',
+                  variant: 'softInfo',
+                  buttonSize: 'm',
+                  onTap: () => {
                     this.onStart();
-                  });
+                  }
+                });
               }
 
               if (this.shouldShowQuickFocus()) {
-                Button('快速验证 10 秒')
-                  .height(44)
-                  .width('100%')
-                  .fontSize(15)
-                  .fontColor('#5F9E8A')
-                  .backgroundColor('#FFFFFF')
-                  .borderRadius(14)
-                  .border({
-                    width: 1,
-                    color: '#DDE8EA'
-                  })
-                  .onClick(() => {
+                AppButton({
+                  title: '快速验证 10 秒',
+                  variant: 'soft',
+                  buttonSize: 'm',
+                  onTap: () => {
                     this.onStartQuickTest();
-                  });
+                  }
+                });
               }
             }
             .width('100%');
@@ -1738,65 +1704,67 @@ export struct FocusPage {
               .padding({ bottom: 4 });
 
             if (this.isRecoveryGateStillRequired()) {
-              Button(`${this.recoveryLadderMinutes()} 分钟恢复`)
-                .height(52)
-                .width('100%')
-                .fontSize(16)
-                .fontColor('#FFFFFF')
-                .backgroundColor('#4D7EA8')
-                .borderRadius(16)
-                .onClick(() => {
+              AppButton({
+                title: `${this.recoveryLadderMinutes()} 分钟恢复`,
+                variant: 'info',
+                buttonSize: 'l',
+                onTap: () => {
                   this.onRestartLastAbandoned();
-                });
+                }
+              });
             } else {
               Row({ space: 12 }) {
-                Button('开始歇息')
-                  .height(52)
-                  .layoutWeight(1)
-                  .fontSize(16)
-                  .fontColor('#FFFFFF')
-                  .backgroundColor('#5F9E8A')
-                  .borderRadius(16)
-                  .onClick(() => {
-                    this.onStartBreak();
+                Column() {
+                  AppButton({
+                    title: '开始歇息',
+                    variant: 'primary',
+                    buttonSize: 'l',
+                    onTap: () => {
+                      this.onStartBreak();
+                    }
                   });
+                }
+                .layoutWeight(1);
 
-                Button(this.isRecoveryCompletedState() ? '转正常专注' : this.nextFocusButtonTitle())
-                  .height(52)
-                  .layoutWeight(1)
-                  .fontSize(16)
-                  .fontColor('#FFFFFF')
-                  .backgroundColor('#4D7EA8')
-                  .borderRadius(16)
-                  .onClick(() => {
-                    this.onStartNextFocus();
+                Column() {
+                  AppButton({
+                    title: this.isRecoveryCompletedState() ? '转正常专注' : this.nextFocusButtonTitle(),
+                    variant: 'info',
+                    buttonSize: 'l',
+                    onTap: () => {
+                      this.onStartNextFocus();
+                    }
                   });
+                }
+                .layoutWeight(1);
               }
               .width('100%');
             }
 
             Row({ space: 12 }) {
-              Button('记录复盘')
-                .height(42)
-                .layoutWeight(1)
-                .fontSize(14)
-                .fontColor('#4D7EA8')
-                .backgroundColor('#EAF2F8')
-                .borderRadius(14)
-                .onClick(() => {
-                  this.onReviewLastFocus();
+              Column() {
+                AppButton({
+                  title: '记录复盘',
+                  variant: 'softInfo',
+                  buttonSize: 'm',
+                  onTap: () => {
+                    this.onReviewLastFocus();
+                  }
                 });
+              }
+              .layoutWeight(1);
 
-              Button('结束今天')
-                .height(42)
-                .layoutWeight(1)
-                .fontSize(14)
-                .fontColor('#1F2A2A')
-                .backgroundColor('#DDE8EA')
-                .borderRadius(14)
-                .onClick(() => {
-                  this.onEndToday();
+              Column() {
+                AppButton({
+                  title: '结束今天',
+                  variant: 'ghost',
+                  buttonSize: 'm',
+                  onTap: () => {
+                    this.onEndToday();
+                  }
                 });
+              }
+              .layoutWeight(1);
             }
             .width('100%');
           } else if (this.timerState.status === 'running') {
@@ -1806,22 +1774,18 @@ export struct FocusPage {
                   Text('专注守门已触发')
                     .fontSize(15)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor('#C96F5D')
+                    .fontColor(DT.danger)
                     .width('100%');
 
                   Text(this.focusIntegrityAuditText())
                     .fontSize(12)
-                    .fontColor('#7B8785')
+                    .fontColor(DT.textSecondary)
                     .width('100%');
                 }
                 .width('100%')
                 .padding(12)
-                .backgroundColor('#FFF8F6')
-                .borderRadius(14)
-                .border({
-                  width: 1,
-                  color: '#FFD8CF'
-                });
+                .backgroundColor(DT.bgDangerSoft)
+                .borderRadius(DT.radiusM);
               }
 
               Row() {
@@ -1829,7 +1793,7 @@ export struct FocusPage {
                   Text(this.isReturnProofActive() ? '守门整理' : '下一步小动作')
                     .fontSize(13)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor(this.themeAccentColor('#4D7EA8'));
+                    .fontColor(this.themeAccentColor(DT.info));
                   Text(this.isReturnProofActive() ? this.returnProofText() : this.microActionText())
                     .fontSize(16)
                     .fontWeight(FontWeight.Medium)
@@ -1843,7 +1807,7 @@ export struct FocusPage {
                 Text(this.microActionRemainingText())
                   .fontSize(14)
                   .fontWeight(FontWeight.Medium)
-                  .fontColor(this.themeAccentColor('#5F9E8A'));
+                  .fontColor(this.themeAccentColor(DT.brand));
               }
               .width('100%')
               .alignItems(VerticalAlign.Center);
@@ -1852,13 +1816,14 @@ export struct FocusPage {
                 Row()
                   .width('100%')
                   .height(7)
-                  .backgroundColor(this.isThemeActive() ? this.focusTheme.cardColor : '#EAF3F0')
+                  .backgroundColor(this.isThemeActive() ? this.focusTheme.cardColor : DT.bgBrandSoft)
                   .borderRadius(4);
 
                 Row()
                   .width(this.microActionProgressWidth())
+                  .backgroundColor(this.themeAccentColor(DT.brand))
+                  .animation({ duration: DT.durBase, curve: Curve.EaseOut })
                   .height(7)
-                  .backgroundColor(this.themeAccentColor('#5F9E8A'))
                   .borderRadius(4);
               }
               .width('100%')
@@ -1871,8 +1836,9 @@ export struct FocusPage {
                     .layoutWeight(1)
                     .fontSize(13)
                     .fontColor(this.isThemeActive() ? this.focusTheme.backgroundColor : '#FFFFFF')
-                    .backgroundColor(this.themeAccentColor('#5F9E8A'))
-                    .borderRadius(12)
+                    .backgroundColor(this.themeAccentColor(DT.brand))
+                    .borderRadius(DT.radiusS)
+                    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                     .onClick(() => {
                       this.onCompleteMicroAction();
                     });
@@ -1882,8 +1848,9 @@ export struct FocusPage {
                     .layoutWeight(1)
                     .fontSize(13)
                     .fontColor(this.themePrimaryTextColor())
-                    .backgroundColor(this.isThemeActive() ? this.focusTheme.cardColor : '#DDE8EA')
-                    .borderRadius(12)
+                    .backgroundColor(this.isThemeActive() ? this.focusTheme.cardColor : DT.bgNeutralSoft)
+                    .borderRadius(DT.radiusS)
+                    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                     .onClick(() => {
                       this.onResetMicroAction();
                     });
@@ -1892,9 +1859,10 @@ export struct FocusPage {
                     .height(38)
                     .layoutWeight(1)
                     .fontSize(13)
-                    .fontColor(this.themeAccentColor('#4D7EA8'))
-                    .backgroundColor(this.isThemeActive() ? this.focusTheme.cardColor : '#EAF2F8')
-                    .borderRadius(12)
+                    .fontColor(this.themeAccentColor(DT.info))
+                    .backgroundColor(this.isThemeActive() ? this.focusTheme.cardColor : DT.bgInfoSoft)
+                    .borderRadius(DT.radiusS)
+                    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                     .onClick(() => {
                       this.onBlockedMicroAction();
                     });
@@ -1905,11 +1873,8 @@ export struct FocusPage {
             .width('100%')
             .padding(14)
             .backgroundColor(this.themeInnerCardColor())
-            .borderRadius(16)
-            .border({
-              width: 1,
-              color: this.isThemeActive() ? this.focusTheme.cardColor : '#DDE8EA'
-            });
+            .animation({ duration: DT.durSlow, curve: Curve.EaseInOut })
+            .borderRadius(DT.radiusL);
 
             if (this.isGuardCooling()) {
               Column({ space: 12 }) {
@@ -1918,10 +1883,10 @@ export struct FocusPage {
                     Text(`想退出：${this.guardReasonText()}`)
                       .fontSize(15)
                       .fontWeight(FontWeight.Medium)
-                      .fontColor('#1F2A2A');
+                      .fontColor(DT.textPrimary);
                     Text(this.guardAbandonReason() === 'blocked' ? '已经给你换成更小动作，先只做 3 分钟。' : '先让冲动降下来，再决定要不要结束。')
                       .fontSize(12)
-                      .fontColor('#7B8785');
+                      .fontColor(DT.textSecondary);
                   }
                   .alignItems(HorizontalAlign.Start)
                   .layoutWeight(1);
@@ -1929,7 +1894,7 @@ export struct FocusPage {
                   Text(`${this.guardRemainingSeconds()}s`)
                     .fontSize(22)
                     .fontWeight(FontWeight.Bold)
-                    .fontColor('#C96F5D');
+                    .fontColor(DT.danger);
                 }
                 .width('100%')
                 .alignItems(VerticalAlign.Center);
@@ -1938,105 +1903,105 @@ export struct FocusPage {
                   Row()
                     .width('100%')
                     .height(8)
-                    .backgroundColor('#FFF0EC')
+                    .backgroundColor(DT.bgDangerSoft)
                     .borderRadius(4);
 
                   Row()
                     .width(this.guardProgressWidth())
+                    .backgroundColor(DT.danger)
+                    .animation({ duration: DT.durBase, curve: Curve.EaseOut })
                     .height(8)
-                    .backgroundColor('#C96F5D')
                     .borderRadius(4);
                 }
                 .width('100%')
                 .height(8);
 
                 Row({ space: 10 }) {
-                  Button('继续这一段')
-                    .height(44)
-                    .layoutWeight(1)
-                    .fontSize(14)
-                    .fontColor('#FFFFFF')
-                    .backgroundColor('#5F9E8A')
-                    .borderRadius(14)
-                    .onClick(() => {
-                      this.onCancelAbandonGuard();
+                  Column() {
+                    AppButton({
+                      title: '继续这一段',
+                      variant: 'primary',
+                      buttonSize: 'm',
+                      onTap: () => {
+                        this.onCancelAbandonGuard();
+                      }
                     });
+                  }
+                  .layoutWeight(1);
 
-                  Button('恢复 1 分钟')
-                    .height(44)
-                    .layoutWeight(1)
-                    .fontSize(14)
-                    .fontColor('#FFFFFF')
-                    .backgroundColor('#4D7EA8')
-                    .borderRadius(14)
-                    .onClick(() => {
-                      this.onGuardShrinkAndContinue();
+                  Column() {
+                    AppButton({
+                      title: '恢复 1 分钟',
+                      variant: 'info',
+                      buttonSize: 'm',
+                      onTap: () => {
+                        this.onGuardShrinkAndContinue();
+                      }
                     });
+                  }
+                  .layoutWeight(1);
                 }
                 .width('100%');
 
-                Button(this.guardRemainingSeconds() > 0 ? '冷静后再结束' : '确认结束本次')
-                  .height(44)
-                  .width('100%')
-                  .fontSize(14)
-                  .fontColor(this.guardRemainingSeconds() > 0 ? '#7B8785' : '#FFFFFF')
-                  .backgroundColor(this.guardRemainingSeconds() > 0 ? '#F1F3F2' : '#C96F5D')
-                  .borderRadius(14)
-                  .onClick(() => {
+                AppButton({
+                  title: this.guardRemainingSeconds() > 0 ? '冷静后再结束' : '确认结束本次',
+                  variant: this.guardRemainingSeconds() > 0 ? 'ghost' : 'danger',
+                  buttonSize: 'm',
+                  onTap: () => {
                     this.onAbandon();
-                  });
+                  }
+                });
               }
               .width('100%')
               .padding(14)
-              .backgroundColor('#FFF8F6')
-              .borderRadius(16)
-              .border({
-                width: 1,
-                color: '#FFD8CF'
-              });
+              .backgroundColor(DT.bgDangerSoft)
+              .borderRadius(DT.radiusL)
+              .transition(TransitionEffect.OPACITY
+                .combine(TransitionEffect.translate({ y: 12 }))
+                .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
             } else {
-              Button('终止本次')
-                .height(52)
-                .width('100%')
-                .fontSize(16)
-                .fontColor('#FFFFFF')
-                .backgroundColor('#C96F5D')
-                .borderRadius(16)
-                .onClick(() => {
+              AppButton({
+                title: '终止本次',
+                variant: 'danger',
+                buttonSize: 'l',
+                onTap: () => {
                   this.onAbandon();
-                });
+                }
+              });
             }
           } else {
             if (this.isBackgroundPaused()) {
               Text(this.awayAuditText())
                 .fontSize(13)
-                .fontColor('#C96F5D')
+                .fontColor(DT.danger)
                 .width('100%')
                 .textAlign(TextAlign.Center);
             }
 
             Row({ space: 12 }) {
-              Button('记录复盘')
-                .height(52)
-                .layoutWeight(1)
-                .fontSize(16)
-                .fontColor('#FFFFFF')
-                .backgroundColor('#5F9E8A')
-                .borderRadius(16)
-                .onClick(() => {
-                  this.onReviewLastFocus();
+              Column() {
+                AppButton({
+                  title: '记录复盘',
+                  variant: 'primary',
+                  buttonSize: 'l',
+                  onTap: () => {
+                    this.onReviewLastFocus();
+                  }
                 });
+              }
+              .layoutWeight(1);
 
-              Button('结束本次')
-                .height(52)
-                .layoutWeight(1)
-                .fontSize(16)
-                .fontColor('#FFFFFF')
-                .backgroundColor('#C96F5D')
-                .borderRadius(16)
-                .onClick(() => {
-                  this.onAbandon();
+              Column() {
+                AppButton({
+                  title: '结束本次',
+                  variant: 'danger',
+                  buttonSize: 'l',
+                  onTap: () => {
+                    this.onAbandon();
+                  }
                 });
+              }
+              .layoutWeight(1);
             }
             .width('100%');
           }
@@ -2044,12 +2009,13 @@ export struct FocusPage {
         }
         .width('100%')
         .padding(20)
-        .backgroundColor(this.themeCardColor())
-        .borderRadius(20)
-        .border({
-          width: 1,
-          color: this.themeCardBorderColor()
-        });
+        .linearGradient({
+          angle: 168,
+          colors: [[this.currentSurface().cardTop, 0], [this.currentSurface().cardBottom, 1]]
+        })
+        .animation({ duration: DT.durSlow, curve: Curve.EaseInOut })
+        .borderRadius(DT.radiusXL)
+        .shadow(this.currentSurface().shadowAmbient);
 
         if (!this.isThemeActive()) {
           SessionPreviewList({ sessions: this.recentSessions });
@@ -2060,6 +2026,7 @@ export struct FocusPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(this.isThemeActive() ? this.focusTheme.backgroundColor : '#F6F8F7');
+    .backgroundColor(this.isThemeActive() ? this.focusTheme.backgroundColor : DT.bgPage)
+    .animation({ duration: DT.durSlow, curve: Curve.EaseInOut });
   }
 }
