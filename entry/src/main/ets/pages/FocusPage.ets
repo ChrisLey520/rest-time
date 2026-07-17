@@ -153,7 +153,11 @@ export struct FocusPage {
   // 专注进行中把主题背景/卡片色发布给根 Tabs，让底部栏与整页同色。
   private publishThemeBar(): void {
     if (this.isThemeActive()) {
-      AppStateService.setThemeBar(this.focusTheme.backgroundColor, this.focusTheme.cardColor);
+      AppStateService.setThemeBar(
+        this.focusTheme.backgroundColor,
+        this.focusTheme.cardColor,
+        this.focusTheme.accentColor
+      );
     } else {
       AppStateService.clearThemeBar();
     }

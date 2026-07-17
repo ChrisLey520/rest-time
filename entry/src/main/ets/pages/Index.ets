@@ -23,6 +23,7 @@ struct Index {
   @State selectedIndex: number = 0;
   @State pageBackgroundColor: string = DT.bgPage;
   @State barBackgroundColor: string = '#FFFFFF';
+  @State barAccentColor: string = DT.brand;
   private tabsController: TabsController = new TabsController();
   private ticker: number = -1;
 
@@ -52,6 +53,9 @@ struct Index {
       if (this.barBackgroundColor !== themeBar.barColor) {
         this.barBackgroundColor = themeBar.barColor;
       }
+      if (this.barAccentColor !== themeBar.accentColor) {
+        this.barAccentColor = themeBar.accentColor;
+      }
     }, 200);
   }
 
@@ -76,8 +80,9 @@ struct Index {
     return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
   }
 
+  // 选中态跟随专注主题的 accentColor；日常浅色为品牌绿。
   private tabActiveColor(): string {
-    return this.isDarkBar() ? '#E8EFEA' : DT.brand;
+    return this.barAccentColor;
   }
 
   private tabInactiveColor(): string {
