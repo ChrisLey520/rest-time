@@ -35,6 +35,10 @@ import {
 } from '../services/StatsService';
 import { WidgetService } from '../services/WidgetService';
 import { formatClockTime, formatDuration } from '../utils/dateTime';
+import { DT } from '../utils/designTokens';
+import { AppCard } from '../components/AppCard';
+import { AppButton } from '../components/AppButton';
+import { AnimatedProgressBar } from '../components/AnimatedProgressBar';
 
 type RecordFilter = 'all' | 'completed' | 'abandoned';
 
@@ -259,11 +263,11 @@ export struct RecordPage {
   }
 
   private filterButtonColor(filter: RecordFilter): string {
-    return this.selectedFilter === filter ? '#5F9E8A' : '#DDE8EA';
+    return this.selectedFilter === filter ? DT.brand : DT.bgNeutralSoft;
   }
 
   private filterButtonFontColor(filter: RecordFilter): string {
-    return this.selectedFilter === filter ? '#FFFFFF' : '#1F2A2A';
+    return this.selectedFilter === filter ? '#FFFFFF' : DT.textSecondary;
   }
 
   private filterEmptyText(): string {
@@ -282,8 +286,8 @@ export struct RecordPage {
     return '当前筛选下没有记录。';
   }
 
-  private goalProgressWidth(): string {
-    return `${this.goalStats.progressPercent}%`;
+  private goalProgressPercent(): number {
+    return Math.max(0, Math.min(100, this.goalStats.progressPercent));
   }
 
   private goalStatusText(): string {
@@ -311,7 +315,7 @@ export struct RecordPage {
   }
 
   private dayBarColor(day: DayStats): string {
-    return day.focusSeconds > 0 ? '#5F9E8A' : '#DDE8EA';
+    return day.focusSeconds > 0 ? DT.brand : DT.track;
   }
 
   private bestFocusHourText(): string {
@@ -437,16 +441,16 @@ export struct RecordPage {
     return this.monthlyStats.projects.slice(0, 3);
   }
 
-  private projectProgressWidth(project: ProjectFocusStats): string {
-    return `${Math.min(100, Math.max(0, project.percent))}%`;
+  private projectPercent(project: ProjectFocusStats): number {
+    return Math.min(100, Math.max(0, project.percent));
   }
 
-  private reportProjectProgressWidth(project: MonthlyReportProject): string {
-    return `${Math.min(100, Math.max(0, project.percent))}%`;
+  private reportProjectPercent(project: MonthlyReportProject): number {
+    return Math.min(100, Math.max(0, project.percent));
   }
 
-  private billingProjectProgressWidth(project: BillableProject): string {
-    return `${Math.min(100, Math.max(0, project.percent))}%`;
+  private billingProjectPercent(project: BillableProject): number {
+    return Math.min(100, Math.max(0, project.percent));
   }
 
   private billableHoursText(seconds: number): string {
@@ -476,11 +480,11 @@ export struct RecordPage {
   }
 
   private billingPeriodButtonColor(period: BillingPeriod): string {
-    return this.billingPeriod === period ? '#5F9E8A' : '#DDE8EA';
+    return this.billingPeriod === period ? DT.brand : DT.bgNeutralSoft;
   }
 
   private billingPeriodButtonFontColor(period: BillingPeriod): string {
-    return this.billingPeriod === period ? '#FFFFFF' : '#1F2A2A';
+    return this.billingPeriod === period ? '#FFFFFF' : DT.textSecondary;
   }
 
   private async switchBillingPeriod(period: BillingPeriod): Promise<void> {
@@ -582,11 +586,11 @@ export struct RecordPage {
   }
 
   private sessionStatusColor(session: FocusSession): string {
-    return session.status === 'completed' ? '#5F9E8A' : '#C96F5D';
+    return session.status === 'completed' ? DT.brand : DT.danger;
   }
 
   private sessionStatusBgColor(session: FocusSession): string {
-    return session.status === 'completed' ? '#EAF3F0' : '#FFF0EC';
+    return session.status === 'completed' ? DT.bgBrandSoft : DT.bgDangerSoft;
   }
 
   private sessionMetaText(session: FocusSession): string {
@@ -668,11 +672,11 @@ export struct RecordPage {
       buttons: [
         {
           text: '取消',
-          color: '#5F9E8A'
+          color: DT.brand
         },
         {
           text: '删除',
-          color: '#C96F5D'
+          color: DT.danger
         }
       ]
     });
@@ -692,11 +696,11 @@ export struct RecordPage {
       buttons: [
         {
           text: '取消',
-          color: '#5F9E8A'
+          color: DT.brand
         },
         {
           text: '清空',
-          color: '#C96F5D'
+          color: DT.danger
         }
       ]
     });
@@ -716,799 +720,748 @@ export struct RecordPage {
           Text('记录')
             .fontSize(28)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1F2A2A')
+            .fontColor(DT.textPrimary)
             .layoutWeight(1);
 
           if (this.sessions.length > 0) {
-            Button('清空')
-              .height(34)
-              .fontSize(13)
-              .fontColor('#C96F5D')
-              .backgroundColor('#FFF0EC')
-              .borderRadius(12)
-              .onClick(() => {
+            AppButton({
+              title: '清空',
+              variant: 'softDanger',
+              buttonSize: 's',
+              stretch: false,
+              onTap: () => {
                 this.clearSessions();
-              });
+              }
+            });
           }
         }
         .width('100%')
         .alignItems(VerticalAlign.Center);
 
         if (this.stageSnapshot.stage === 'empty') {
-          Column({ space: 12 }) {
-            Text(this.stageSnapshot.headline)
-              .fontSize(19)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#1F2A2A')
-              .width('100%');
-            Text(this.stageSnapshot.description)
-              .fontSize(13)
-              .fontColor('#7B8785')
-              .width('100%');
-            Text(this.stageSnapshot.unlockHint)
-              .fontSize(12)
-              .fontColor('#4D7EA8')
-              .width('100%');
-
-            Button('去开始第一段专注')
-              .height(42)
-              .width('100%')
-              .fontSize(14)
-              .fontColor('#FFFFFF')
-              .backgroundColor('#5F9E8A')
-              .borderRadius(14)
-              .onClick(() => {
-                AppStateService.setSelectedTabIndex(0);
-              });
-          }
-          .width('100%')
-          .padding(18)
-          .alignItems(HorizontalAlign.Start)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(18)
-          .border({
-            width: 1,
-            color: '#DDE8EA'
-          });
-        }
-
-        if (this.stageSnapshot.stage !== 'empty') {
-          Column({ space: 8 }) {
-            Text('今日已专注')
-              .fontSize(14)
-              .fontColor('#7B8785');
-            Text(formatDuration(this.todaySeconds))
-              .fontSize(34)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#1F2A2A');
-            Text(`完成 ${this.completedFocusCount} 次专注 / ${this.completedTaskCount} 个任务`)
-              .fontSize(13)
-              .fontColor('#7B8785');
-
-            Stack({ alignContent: Alignment.Start }) {
-              Row()
-                .width('100%')
-                .height(8)
-                .backgroundColor('#EEF3F2')
-                .borderRadius(4);
-
-              Row()
-                .width(this.goalProgressWidth())
-                .height(8)
-                .backgroundColor(this.goalStats.isCompleted ? '#4D7EA8' : '#5F9E8A')
-                .borderRadius(4);
-            }
-            .width('100%')
-            .height(8)
-            .padding({ top: 4 });
-
-            Text(`${this.goalStatusText()} / 目标 ${this.goalStats.goalMinutes} 分钟`)
-              .fontSize(12)
-              .fontColor('#7B8785');
-
-            Row({ space: 8 }) {
-              Column({ space: 3 }) {
-                Text(this.completionRateText())
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#5F9E8A');
-                Text('完成率')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-
-              Column({ space: 3 }) {
-                Text(`${this.abandonedSessions().length}`)
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#C96F5D');
-                Text('已结束')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-
-              Column({ space: 3 }) {
-                Text(this.averageCompletedDurationText())
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#4D7EA8');
-                Text('平均时长')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-            }
-            .width('100%')
-            .padding({ top: 8 });
-          }
-          .width('100%')
-          .padding(18)
-          .alignItems(HorizontalAlign.Start)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(18)
-          .border({
-            width: 1,
-            color: '#DDE8EA'
-          });
-        }
-
-        if (this.stageSnapshot.stage !== 'empty') {
-          Column({ space: 14 }) {
-            Row() {
-              Text('复盘洞察')
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#1F2A2A')
-                .layoutWeight(1);
-              Text(`活跃 ${this.weeklyStats.activeDayCount}/7 天`)
-                .fontSize(12)
-                .fontColor('#7B8785');
-            }
-            .width('100%');
-
-            Column({ space: 5 }) {
-              Text(this.reviewSummaryTitle())
+          AppCard({ cardPadding: 18 }) {
+            Column({ space: 12 }) {
+              Text(this.stageSnapshot.headline)
                 .fontSize(19)
                 .fontWeight(FontWeight.Bold)
-                .fontColor('#1F2A2A')
+                .fontColor(DT.textPrimary)
                 .width('100%');
-              Text(this.reviewSummaryDescription())
+              Text(this.stageSnapshot.description)
                 .fontSize(13)
-                .fontColor('#7B8785')
+                .fontColor(DT.textSecondary)
                 .width('100%');
+              Text(this.stageSnapshot.unlockHint)
+                .fontSize(12)
+                .fontColor(DT.info)
+                .width('100%');
+
+              AppButton({
+                title: '去开始第一段专注',
+                variant: 'primary',
+                buttonSize: 'm',
+                onTap: () => {
+                  AppStateService.setSelectedTabIndex(0);
+                }
+              });
             }
             .width('100%')
             .alignItems(HorizontalAlign.Start);
+          }
+        }
 
-            Row({ space: 8 }) {
-              Column({ space: 3 }) {
-                Text(formatDuration(this.weeklyStats.totalFocusSeconds))
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#1F2A2A');
-                Text('本周总计')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
+        if (this.stageSnapshot.stage !== 'empty') {
+          AppCard({ cardPadding: 18 }) {
+            Column({ space: 8 }) {
+              Text('今日已专注')
+                .fontSize(14)
+                .fontColor(DT.textSecondary);
+              Text(formatDuration(this.todaySeconds))
+                .fontSize(34)
+                .fontWeight(FontWeight.Bold)
+                .fontColor(DT.textPrimary);
+              Text(`完成 ${this.completedFocusCount} 次专注 / ${this.completedTaskCount} 个任务`)
+                .fontSize(13)
+                .fontColor(DT.textSecondary);
 
-              Column({ space: 3 }) {
-                Text(this.streakText())
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#4D7EA8');
-                Text('专注节奏')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
+              AnimatedProgressBar({
+                percent: this.goalProgressPercent(),
+                barColor: this.goalStats.isCompleted ? DT.info : DT.brand,
+                trackColor: DT.track,
+                barHeight: 8
+              });
 
-              Column({ space: 3 }) {
-                Text(this.bestFocusHourText())
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#5F9E8A');
-                Text('高效时段')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-            }
-            .width('100%');
+              Text(`${this.goalStatusText()} / 目标 ${this.goalStats.goalMinutes} 分钟`)
+                .fontSize(12)
+                .fontColor(DT.textSecondary);
 
-            Row({ space: 10 }) {
-              Column({ space: 3 }) {
-                Text(this.weeklyAverageText())
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#4D7EA8');
-                Text('活跃日均')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-
-              Column({ space: 3 }) {
-                Text(`${this.reviewStats.completionRatePercent}%`)
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#5F9E8A');
-                Text('累计完成率')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-
-              Column({ space: 3 }) {
-                Text(this.weeklyStats.bestDayLabel)
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#1F2A2A');
-                Text(`最佳 ${formatDuration(this.weeklyStats.bestDayFocusSeconds)}`)
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-            }
-            .width('100%');
-
-            Row({ space: 8 }) {
-              ForEach(this.weeklyStats.days, (day: DayStats) => {
-                Column({ space: 6 }) {
-                  Stack({ alignContent: Alignment.Bottom }) {
-                    Row()
-                      .width('100%')
-                      .height(64)
-                      .backgroundColor('#F6F8F7')
-                      .borderRadius(8);
-
-                    Row()
-                      .width('100%')
-                      .height(this.dayBarHeight(day))
-                      .backgroundColor(this.dayBarColor(day))
-                      .borderRadius(8);
-                  }
-                  .width('100%')
-                  .height(64);
-
-                  Text(day.label)
-                    .fontSize(10)
-                    .fontColor('#7B8785')
-                    .maxLines(1)
-                    .textAlign(TextAlign.Center);
+              Row({ space: 8 }) {
+                Column({ space: 3 }) {
+                  Text(this.completionRateText())
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.brand);
+                  Text('完成率')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
                 }
                 .layoutWeight(1)
-                .alignItems(HorizontalAlign.Center);
-              }, (day: DayStats) => `${day.startAt}`);
-            }
-            .width('100%');
+                .alignItems(HorizontalAlign.Start);
 
-            Column({ space: 8 }) {
-              Row() {
                 Column({ space: 3 }) {
-                  Text('节奏保护券')
+                  Text(`${this.abandonedSessions().length}`)
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.danger);
+                  Text('已结束')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(this.averageCompletedDurationText())
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.info);
+                  Text('平均时长')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+              }
+              .width('100%')
+              .padding({ top: 8 });
+            }
+            .width('100%')
+            .alignItems(HorizontalAlign.Start);
+          }
+        }
+
+        if (this.stageSnapshot.stage !== 'empty') {
+          AppCard({ cardPadding: 18 }) {
+            Column({ space: 14 }) {
+              Row() {
+                Text('复盘洞察')
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.textPrimary)
+                  .layoutWeight(1);
+                Text(`活跃 ${this.weeklyStats.activeDayCount}/7 天`)
+                  .fontSize(12)
+                  .fontColor(DT.textSecondary);
+              }
+              .width('100%');
+
+              Column({ space: 5 }) {
+                Text(this.reviewSummaryTitle())
+                  .fontSize(19)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor(DT.textPrimary)
+                  .width('100%');
+                Text(this.reviewSummaryDescription())
+                  .fontSize(13)
+                  .fontColor(DT.textSecondary)
+                  .width('100%');
+              }
+              .width('100%')
+              .alignItems(HorizontalAlign.Start);
+
+              Row({ space: 8 }) {
+                Column({ space: 3 }) {
+                  Text(formatDuration(this.weeklyStats.totalFocusSeconds))
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.textPrimary);
+                  Text('本周总计')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(this.streakText())
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.info);
+                  Text('专注节奏')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(this.bestFocusHourText())
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.brand);
+                  Text('高效时段')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+              }
+              .width('100%');
+
+              Row({ space: 10 }) {
+                Column({ space: 3 }) {
+                  Text(this.weeklyAverageText())
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.info);
+                  Text('活跃日均')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(`${this.reviewStats.completionRatePercent}%`)
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.brand);
+                  Text('累计完成率')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(this.weeklyStats.bestDayLabel)
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.textPrimary);
+                  Text(`最佳 ${formatDuration(this.weeklyStats.bestDayFocusSeconds)}`)
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+              }
+              .width('100%');
+
+              Row({ space: 8 }) {
+                ForEach(this.weeklyStats.days, (day: DayStats) => {
+                  Column({ space: 6 }) {
+                    Stack({ alignContent: Alignment.Bottom }) {
+                      Row()
+                        .width('100%')
+                        .height(64)
+                        .backgroundColor(DT.bgInput)
+                        .borderRadius(8);
+
+                      Row()
+                        .width('100%')
+                        .height(this.dayBarHeight(day))
+                        .animation({ duration: DT.durBase, curve: Curve.EaseOut })
+                        .backgroundColor(this.dayBarColor(day))
+                        .borderRadius(8);
+                    }
+                    .width('100%')
+                    .height(64);
+
+                    Text(day.label)
+                      .fontSize(10)
+                      .fontColor(DT.textSecondary)
+                      .maxLines(1)
+                      .textAlign(TextAlign.Center);
+                  }
+                  .layoutWeight(1)
+                  .alignItems(HorizontalAlign.Center);
+                }, (day: DayStats) => `${day.startAt}`);
+              }
+              .width('100%');
+
+              Column({ space: 8 }) {
+                Row() {
+                  Column({ space: 3 }) {
+                    Text('节奏保护券')
+                      .fontSize(14)
+                      .fontWeight(FontWeight.Medium)
+                      .fontColor(DT.textPrimary);
+                    Text(this.streakGuardHintText())
+                      .fontSize(11)
+                      .fontColor(DT.textSecondary);
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1);
+
+                  AppButton({
+                    title: `${STREAK_GUARD_PRICE} 币兑换`,
+                    variant: 'primary',
+                    buttonSize: 's',
+                    stretch: false,
+                    buttonEnabled: this.canBuyStreakGuard(),
+                    onTap: () => {
+                      this.buyStreakGuard();
+                    }
+                  });
+                }
+                .width('100%')
+                .alignItems(VerticalAlign.Center);
+
+                Text(`持有 ${this.streakGuardSnapshot.heldGuards}/${STREAK_GUARD_MAX_HELD} 张 · 时光币余额 ${this.streakGuardSnapshot.coinBalance}`)
+                  .fontSize(11)
+                  .fontColor(DT.info)
+                  .width('100%');
+              }
+              .width('100%')
+              .padding(12)
+              .backgroundColor(DT.bgInput)
+              .borderRadius(DT.radiusM);
+
+              if (!this.stageSnapshot.showMonthlyReport) {
+                Column({ space: 5 }) {
+                  Text(this.stageSnapshot.headline)
                     .fontSize(14)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor('#1F2A2A');
-                  Text(this.streakGuardHintText())
+                    .fontColor(DT.textPrimary)
+                    .width('100%');
+                  Text(this.stageSnapshot.unlockHint)
+                    .fontSize(12)
+                    .fontColor(DT.info)
+                    .width('100%');
+                }
+                .width('100%')
+                .padding(12)
+                .backgroundColor(DT.bgInput)
+                .borderRadius(DT.radiusM);
+              }
+            }
+            .width('100%');
+          }
+
+          AppCard({ cardPadding: 18 }) {
+            Column({ space: 12 }) {
+              Row() {
+                Text('规划复盘')
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.textPrimary)
+                  .layoutWeight(1);
+                Text('下轮建议')
+                  .fontSize(12)
+                  .fontColor(DT.info);
+              }
+              .width('100%');
+
+              Column({ space: 5 }) {
+                Text(this.planningReviewTitle())
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor(DT.textPrimary)
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  .width('100%');
+                Text(this.planningReviewDescription())
+                  .fontSize(13)
+                  .fontColor(DT.textSecondary)
+                  .width('100%');
+              }
+              .alignItems(HorizontalAlign.Start)
+              .width('100%');
+
+              Row({ space: 10 }) {
+                Column({ space: 3 }) {
+                  Text(this.planningTodayText())
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.textPrimary);
+                  Text('今日建议')
                     .fontSize(11)
-                    .fontColor('#7B8785');
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(this.planningCarryoverText())
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.info);
+                  Text('明日结转')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(`${this.planningSnapshot.weeklyRemainingFocusCount} 次`)
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.brand);
+                  Text('本周还差')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+              }
+              .width('100%');
+            }
+            .width('100%');
+          }
+        }
+
+        if (this.stageSnapshot.showMonthlyReport) {
+          Column() {
+            AppCard({ cardPadding: 18 }) {
+              Column({ space: 12 }) {
+              Row() {
+                Column({ space: 3 }) {
+                  Text(this.monthlyReport.title)
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(DT.textPrimary);
+                  Text(this.monthlyReport.subtitle)
+                    .fontSize(12)
+                    .fontColor(DT.textSecondary);
                 }
                 .alignItems(HorizontalAlign.Start)
                 .layoutWeight(1);
 
-                Button(`${STREAK_GUARD_PRICE} 币兑换`)
-                  .height(32)
+                Text('体验期免费')
                   .fontSize(12)
-                  .fontColor(this.canBuyStreakGuard() ? '#FFFFFF' : '#9AA6A3')
-                  .backgroundColor(this.canBuyStreakGuard() ? '#5F9E8A' : '#EEF3F2')
-                  .borderRadius(11)
-                  .enabled(this.canBuyStreakGuard())
-                  .onClick(() => {
-                    this.buyStreakGuard();
-                  });
+                  .fontColor(DT.info)
+                  .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                  .backgroundColor(DT.bgInfoSoft)
+                  .borderRadius(DT.radiusS);
               }
               .width('100%')
               .alignItems(VerticalAlign.Center);
 
-              Text(`持有 ${this.streakGuardSnapshot.heldGuards}/${STREAK_GUARD_MAX_HELD} 张 · 时光币余额 ${this.streakGuardSnapshot.coinBalance}`)
-                .fontSize(11)
-                .fontColor('#4D7EA8')
-                .width('100%');
-            }
-            .width('100%')
-            .padding(12)
-            .backgroundColor('#F6F8F7')
-            .borderRadius(14);
-
-            if (!this.stageSnapshot.showMonthlyReport) {
-              Column({ space: 5 }) {
-                Text(this.stageSnapshot.headline)
+              Column({ space: 7 }) {
+                Text(this.monthlyReport.summary)
                   .fontSize(14)
                   .fontWeight(FontWeight.Medium)
-                  .fontColor('#1F2A2A')
+                  .fontColor(DT.textPrimary)
                   .width('100%');
-                Text(this.stageSnapshot.unlockHint)
-                  .fontSize(12)
-                  .fontColor('#4D7EA8')
+                Text(this.monthlyReport.insight)
+                  .fontSize(13)
+                  .fontColor(DT.info)
+                  .width('100%');
+                Text(this.monthlyReport.suggestion)
+                  .fontSize(13)
+                  .fontColor(DT.textSecondary)
                   .width('100%');
               }
               .width('100%')
               .padding(12)
-              .backgroundColor('#F6F8F7')
-              .borderRadius(14);
-            }
-          }
-          .width('100%')
-          .padding(18)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(18)
-          .border({
-            width: 1,
-            color: '#DDE8EA'
-          });
+              .backgroundColor(DT.bgInput)
+              .borderRadius(DT.radiusM);
 
-          Column({ space: 12 }) {
-            Row() {
-              Text('规划复盘')
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#1F2A2A')
-                .layoutWeight(1);
-              Text('下轮建议')
-                .fontSize(12)
-                .fontColor('#4D7EA8');
-            }
-            .width('100%');
-
-            Column({ space: 5 }) {
-              Text(this.planningReviewTitle())
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .fontColor('#1F2A2A')
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
+              if (this.monthlyReport.metrics.length > 0) {
+                Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
+                  ForEach(this.monthlyReport.metrics, (metric: MonthlyReportMetric) => {
+                    Column({ space: 3 }) {
+                      Text(metric.value)
+                        .fontSize(16)
+                        .fontWeight(FontWeight.Medium)
+                        .fontColor(metric.label === '完成率' ? DT.brand : DT.textPrimary)
+                        .maxLines(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis });
+                      Text(metric.label)
+                        .fontSize(11)
+                        .fontColor(DT.textSecondary);
+                      Text(metric.detail)
+                        .fontSize(10)
+                        .fontColor(DT.textPlaceholder)
+                        .maxLines(1)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis });
+                    }
+                    .width('48%')
+                    .padding(10)
+                    .alignItems(HorizontalAlign.Start)
+                    .backgroundColor(DT.bgInput)
+                    .borderRadius(DT.radiusM);
+                  }, (metric: MonthlyReportMetric) => metric.label);
+                }
                 .width('100%');
-              Text(this.planningReviewDescription())
-                .fontSize(13)
-                .fontColor('#7B8785')
-                .width('100%');
-            }
-            .alignItems(HorizontalAlign.Start)
-            .width('100%');
-
-            Row({ space: 10 }) {
-              Column({ space: 3 }) {
-                Text(this.planningTodayText())
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#1F2A2A');
-                Text('今日建议')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
               }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
 
-              Column({ space: 3 }) {
-                Text(this.planningCarryoverText())
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#4D7EA8');
-                Text('明日结转')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
+              if (this.monthlyReport.projects.length > 0) {
+                Column({ space: 10 }) {
+                  Text('项目投入')
+                    .fontSize(14)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.textPrimary)
+                    .width('100%');
+
+                  ForEach(this.monthlyReport.projects, (project: MonthlyReportProject) => {
+                    Column({ space: 6 }) {
+                      Row({ space: 6 }) {
+                        Circle({ width: 8, height: 8 })
+                          .fill(projectColor(project.projectName));
+                        Text(project.projectName)
+                          .fontSize(13)
+                          .fontColor(DT.textPrimary)
+                          .maxLines(1)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                          .layoutWeight(1);
+                        Text(`${project.percent}% · ${project.summary}`)
+                          .fontSize(12)
+                          .fontColor(DT.textSecondary);
+                      }
+                      .width('100%')
+                      .alignItems(VerticalAlign.Center);
+
+                      AnimatedProgressBar({
+                        percent: this.reportProjectPercent(project),
+                        barColor: projectColor(project.projectName),
+                        trackColor: DT.track,
+                        barHeight: 7
+                      });
+                    }
+                    .width('100%');
+                  }, (project: MonthlyReportProject) => project.projectName);
+                }
+                .width('100%')
+                .padding(12)
+                .backgroundColor(DT.bgInput)
+                .borderRadius(DT.radiusM);
               }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
 
-              Column({ space: 3 }) {
-                Text(`${this.planningSnapshot.weeklyRemainingFocusCount} 次`)
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#5F9E8A');
-                Text('本周还差')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-            }
-            .width('100%');
-          }
-          .width('100%')
-          .padding(18)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(18)
-          .border({
-            width: 1,
-            color: '#DDE8EA'
-          });
-        }
-
-        if (this.stageSnapshot.showMonthlyReport) {
-          Column({ space: 12 }) {
-            Row() {
-              Column({ space: 3 }) {
-                Text(this.monthlyReport.title)
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor('#1F2A2A');
-                Text(this.monthlyReport.subtitle)
-                  .fontSize(12)
-                  .fontColor('#7B8785');
-              }
-              .alignItems(HorizontalAlign.Start)
-              .layoutWeight(1);
-
-              Text('体验期免费')
-                .fontSize(12)
-                .fontColor('#4D7EA8')
-                .padding({ left: 10, right: 10, top: 5, bottom: 5 })
-                .backgroundColor('#EAF2F8')
-                .borderRadius(11);
-            }
-            .width('100%')
-            .alignItems(VerticalAlign.Center);
-
-            Column({ space: 7 }) {
-              Text(this.monthlyReport.summary)
-                .fontSize(14)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#1F2A2A')
-                .width('100%');
-              Text(this.monthlyReport.insight)
-                .fontSize(13)
-                .fontColor('#4D7EA8')
-                .width('100%');
-              Text(this.monthlyReport.suggestion)
-                .fontSize(13)
-                .fontColor('#7B8785')
-                .width('100%');
-            }
-            .width('100%')
-            .padding(12)
-            .backgroundColor('#F6F8F7')
-            .borderRadius(14);
-
-            if (this.monthlyReport.metrics.length > 0) {
-              Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
-                ForEach(this.monthlyReport.metrics, (metric: MonthlyReportMetric) => {
-                  Column({ space: 3 }) {
-                    Text(metric.value)
-                      .fontSize(16)
-                      .fontWeight(FontWeight.Medium)
-                      .fontColor(metric.label === '完成率' ? '#5F9E8A' : '#1F2A2A')
-                      .maxLines(1)
-                      .textOverflow({ overflow: TextOverflow.Ellipsis });
-                    Text(metric.label)
-                      .fontSize(11)
-                      .fontColor('#7B8785');
-                    Text(metric.detail)
-                      .fontSize(10)
-                      .fontColor('#9AA6A3')
-                      .maxLines(1)
-                      .textOverflow({ overflow: TextOverflow.Ellipsis });
-                  }
-                  .width('48%')
-                  .padding(10)
-                  .alignItems(HorizontalAlign.Start)
-                  .backgroundColor('#FFFFFF')
-                  .borderRadius(12)
-                  .border({
-                    width: 1,
-                    color: '#DDE8EA'
+              Row({ space: 8 }) {
+                Column() {
+                  AppButton({
+                    title: '导出 CSV',
+                    variant: 'info',
+                    buttonSize: 'm',
+                    onTap: () => {
+                      this.showReportExportPreview();
+                    }
                   });
-                }, (metric: MonthlyReportMetric) => metric.label);
+                }
+                .layoutWeight(1);
+
+                Column() {
+                  AppButton({
+                    title: '保存长图',
+                    variant: 'softInfo',
+                    buttonSize: 'm',
+                    onTap: () => {
+                      this.saveReportImage();
+                    }
+                  });
+                }
+                .layoutWeight(1);
               }
               .width('100%');
             }
-
-            if (this.monthlyReport.projects.length > 0) {
-              Column({ space: 10 }) {
-                Text('项目投入')
-                  .fontSize(14)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#1F2A2A')
-                  .width('100%');
-
-                ForEach(this.monthlyReport.projects, (project: MonthlyReportProject) => {
-                  Column({ space: 6 }) {
-                    Row({ space: 6 }) {
-                      Circle({ width: 8, height: 8 })
-                        .fill(projectColor(project.projectName));
-                      Text(project.projectName)
-                        .fontSize(13)
-                        .fontColor('#1F2A2A')
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                        .layoutWeight(1);
-                      Text(`${project.percent}% · ${project.summary}`)
-                        .fontSize(12)
-                        .fontColor('#7B8785');
-                    }
-                    .width('100%')
-                    .alignItems(VerticalAlign.Center);
-
-                    Stack({ alignContent: Alignment.Start }) {
-                      Row()
-                        .width('100%')
-                        .height(7)
-                        .backgroundColor('#EEF3F2')
-                        .borderRadius(4);
-
-                      Row()
-                        .width(this.reportProjectProgressWidth(project))
-                        .height(7)
-                        .backgroundColor(projectColor(project.projectName))
-                        .borderRadius(4);
-                    }
-                    .width('100%')
-                    .height(7);
-                  }
-                  .width('100%');
-                }, (project: MonthlyReportProject) => project.projectName);
-              }
-              .width('100%')
-              .padding(12)
-              .backgroundColor('#F6F8F7')
-              .borderRadius(14);
-            }
-
-            Row({ space: 8 }) {
-              Button('导出 CSV')
-                .height(42)
-                .layoutWeight(1)
-                .fontSize(14)
-                .fontColor('#FFFFFF')
-                .backgroundColor('#4D7EA8')
-                .borderRadius(14)
-                .onClick(() => {
-                  this.showReportExportPreview();
-                });
-
-              Button('保存长图')
-                .height(42)
-                .layoutWeight(1)
-                .fontSize(14)
-                .fontColor('#4D7EA8')
-                .backgroundColor('#EAF2F8')
-                .borderRadius(14)
-                .onClick(() => {
-                  this.saveReportImage();
-                });
-            }
             .width('100%');
           }
-          .id(MONTHLY_REPORT_CARD_ID)
+          }
           .width('100%')
-          .padding(18)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(18)
-          .border({
-            width: 1,
-            color: '#DDE8EA'
-          });
+          .id(MONTHLY_REPORT_CARD_ID);
         }
 
         if (this.stageSnapshot.showBilling) {
-          Column({ space: 12 }) {
-            Row() {
-              Column({ space: 3 }) {
-                Text('客户账单')
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor('#1F2A2A');
-                Text(`${this.billingSummary.monthLabel} · ${this.billingSummary.currencySymbol}${this.billingSummary.hourlyRate}/小时`)
+          AppCard({ cardPadding: 18 }) {
+            Column({ space: 12 }) {
+              Row() {
+                Column({ space: 3 }) {
+                  Text('客户账单')
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(DT.textPrimary);
+                  Text(`${this.billingSummary.monthLabel} · ${this.billingSummary.currencySymbol}${this.billingSummary.hourlyRate}/小时`)
+                    .fontSize(12)
+                    .fontColor(DT.textSecondary);
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1);
+
+                Text('体验期免费')
                   .fontSize(12)
-                  .fontColor('#7B8785');
+                  .fontColor(DT.brand)
+                  .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                  .backgroundColor(DT.bgBrandSoft)
+                  .borderRadius(DT.radiusS);
               }
-              .alignItems(HorizontalAlign.Start)
-              .layoutWeight(1);
+              .width('100%')
+              .alignItems(VerticalAlign.Center);
 
-              Text('体验期免费')
-                .fontSize(12)
-                .fontColor('#5F9E8A')
-                .padding({ left: 10, right: 10, top: 5, bottom: 5 })
-                .backgroundColor('#EAF3F0')
-                .borderRadius(11);
-            }
-            .width('100%')
-            .alignItems(VerticalAlign.Center);
+              Row({ space: 8 }) {
+                Button('本月')
+                  .height(34)
+                  .layoutWeight(1)
+                  .fontSize(12)
+                  .fontColor(this.billingPeriodButtonFontColor('current'))
+                  .backgroundColor(this.billingPeriodButtonColor('current'))
+                  .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                  .borderRadius(DT.radiusS)
+                  .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
+                  .onClick(() => {
+                    this.switchBillingPeriod('current');
+                  });
 
-            Row({ space: 8 }) {
-              Button('本月')
-                .height(32)
-                .layoutWeight(1)
-                .fontSize(12)
-                .fontColor(this.billingPeriodButtonFontColor('current'))
-                .backgroundColor(this.billingPeriodButtonColor('current'))
-                .borderRadius(11)
-                .onClick(() => {
-                  this.switchBillingPeriod('current');
-                });
-
-              Button('上月')
-                .height(32)
-                .layoutWeight(1)
-                .fontSize(12)
-                .fontColor(this.billingPeriodButtonFontColor('previous'))
-                .backgroundColor(this.billingPeriodButtonColor('previous'))
-                .borderRadius(11)
-                .onClick(() => {
-                  this.switchBillingPeriod('previous');
-                });
-            }
-            .width('100%');
-
-            Column({ space: 7 }) {
-              Text(this.billingInsightText())
-                .fontSize(14)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#1F2A2A')
-                .width('100%');
-              Text(this.billingSuggestionText())
-                .fontSize(13)
-                .fontColor('#7B8785')
-                .width('100%');
-            }
-            .width('100%')
-            .padding(12)
-            .backgroundColor('#F6F8F7')
-            .borderRadius(14);
-
-            Row({ space: 10 }) {
-              Column({ space: 3 }) {
-                Text(this.moneyText(this.billingSummary.totalAmount))
-                  .fontSize(22)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor('#1F2A2A');
-                Text(this.billingPeriod === 'previous' ? '上月可结算' : '本月可结算')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
+                Button('上月')
+                  .height(34)
+                  .layoutWeight(1)
+                  .fontSize(12)
+                  .fontColor(this.billingPeriodButtonFontColor('previous'))
+                  .backgroundColor(this.billingPeriodButtonColor('previous'))
+                  .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                  .borderRadius(DT.radiusS)
+                  .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
+                  .onClick(() => {
+                    this.switchBillingPeriod('previous');
+                  });
               }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
+              .width('100%');
 
-              Column({ space: 3 }) {
-                Text(this.billableHoursText(this.billingSummary.totalBillableSeconds))
-                  .fontSize(16)
+              Column({ space: 7 }) {
+                Text(this.billingInsightText())
+                  .fontSize(14)
                   .fontWeight(FontWeight.Medium)
-                  .fontColor('#4D7EA8');
-                Text('计费时长')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-
-              Column({ space: 3 }) {
-                Text(`${this.billingSummary.projectCount}`)
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .fontColor('#5F9E8A');
-                Text('项目数')
-                  .fontSize(11)
-                  .fontColor('#7B8785');
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start);
-            }
-            .width('100%');
-
-            if (this.topBillingProjects().length > 0) {
-              Column({ space: 10 }) {
-                ForEach(this.topBillingProjects(), (project: BillableProject) => {
-                  Column({ space: 6 }) {
-                    Row({ space: 6 }) {
-                      Circle({ width: 8, height: 8 })
-                        .fill(projectColor(project.projectName));
-                      Text(project.projectName)
-                        .fontSize(13)
-                        .fontColor('#1F2A2A')
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                        .layoutWeight(1);
-                      Text(project.billable
-                        ? `${this.moneyText(project.amount)} · ${this.billableHoursText(project.billableSeconds)}`
-                        : '不计费')
-                        .fontSize(12)
-                        .fontColor(project.billable ? '#7B8785' : '#C96F5D');
-                    }
-                    .width('100%')
-                    .alignItems(VerticalAlign.Center);
-
-                    Stack({ alignContent: Alignment.Start }) {
-                      Row()
-                        .width('100%')
-                        .height(7)
-                        .backgroundColor('#EEF3F2')
-                        .borderRadius(4);
-
-                      Row()
-                        .width(this.billingProjectProgressWidth(project))
-                        .height(7)
-                        .backgroundColor(project.billable ? projectColor(project.projectName) : '#DDE8EA')
-                        .borderRadius(4);
-                    }
-                    .width('100%')
-                    .height(7);
-                  }
+                  .fontColor(DT.textPrimary)
                   .width('100%');
-                }, (project: BillableProject) => project.projectName);
+                Text(this.billingSuggestionText())
+                  .fontSize(13)
+                  .fontColor(DT.textSecondary)
+                  .width('100%');
               }
               .width('100%')
               .padding(12)
-              .backgroundColor('#FFFFFF')
-              .borderRadius(14)
-              .border({
-                width: 1,
-                color: '#DDE8EA'
-              });
-            }
+              .backgroundColor(DT.bgInput)
+              .borderRadius(DT.radiusM);
 
-            if (this.billingSummary.invoiceNote) {
-              Text(`发票备注：${this.billingSummary.invoiceNote}`)
-                .fontSize(12)
-                .fontColor('#7B8785')
+              Row({ space: 10 }) {
+                Column({ space: 3 }) {
+                  Text(this.moneyText(this.billingSummary.totalAmount))
+                    .fontSize(22)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(DT.textPrimary);
+                  Text(this.billingPeriod === 'previous' ? '上月可结算' : '本月可结算')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(this.billableHoursText(this.billingSummary.totalBillableSeconds))
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.info);
+                  Text('计费时长')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+
+                Column({ space: 3 }) {
+                  Text(`${this.billingSummary.projectCount}`)
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(DT.brand);
+                  Text('项目数')
+                    .fontSize(11)
+                    .fontColor(DT.textSecondary);
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start);
+              }
+              .width('100%');
+
+              if (this.topBillingProjects().length > 0) {
+                Column({ space: 10 }) {
+                  ForEach(this.topBillingProjects(), (project: BillableProject) => {
+                    Column({ space: 6 }) {
+                      Row({ space: 6 }) {
+                        Circle({ width: 8, height: 8 })
+                          .fill(projectColor(project.projectName));
+                        Text(project.projectName)
+                          .fontSize(13)
+                          .fontColor(DT.textPrimary)
+                          .maxLines(1)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis })
+                          .layoutWeight(1);
+                        Text(project.billable
+                          ? `${this.moneyText(project.amount)} · ${this.billableHoursText(project.billableSeconds)}`
+                          : '不计费')
+                          .fontSize(12)
+                          .fontColor(project.billable ? DT.textSecondary : DT.danger);
+                      }
+                      .width('100%')
+                      .alignItems(VerticalAlign.Center);
+
+                      AnimatedProgressBar({
+                        percent: this.billingProjectPercent(project),
+                        barColor: project.billable ? projectColor(project.projectName) : DT.track,
+                        trackColor: DT.track,
+                        barHeight: 7
+                      });
+                    }
+                    .width('100%');
+                  }, (project: BillableProject) => project.projectName);
+                }
                 .width('100%')
-                .padding(10)
-                .backgroundColor('#F6F8F7')
-                .borderRadius(12);
+                .padding(12)
+                .backgroundColor(DT.bgCard)
+                .borderRadius(DT.radiusM)
+                .shadow(DT.shadowContact);
+              }
+
+              if (this.billingSummary.invoiceNote) {
+                Text(`发票备注：${this.billingSummary.invoiceNote}`)
+                  .fontSize(12)
+                  .fontColor(DT.textSecondary)
+                  .width('100%')
+                  .padding(10)
+                  .backgroundColor(DT.bgInput)
+                  .borderRadius(DT.radiusS);
+              }
             }
+            .width('100%');
           }
-          .width('100%')
-          .padding(18)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(18)
-          .border({
-            width: 1,
-            color: '#DDE8EA'
-          });
         }
 
         if (this.stageSnapshot.stage !== 'empty') {
           Row({ space: 8 }) {
             Button(`全部 ${this.sessions.length}`)
-              .height(36)
+              .height(34)
               .layoutWeight(1)
               .fontSize(13)
               .fontColor(this.filterButtonFontColor('all'))
               .backgroundColor(this.filterButtonColor('all'))
-              .borderRadius(12)
+              .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+              .borderRadius(DT.radiusS)
+              .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
               .onClick(() => {
                 this.selectedFilter = 'all';
               });
 
             Button(`完成 ${this.completedSessions().length}`)
-              .height(36)
+              .height(34)
               .layoutWeight(1)
               .fontSize(13)
               .fontColor(this.filterButtonFontColor('completed'))
               .backgroundColor(this.filterButtonColor('completed'))
-              .borderRadius(12)
+              .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+              .borderRadius(DT.radiusS)
+              .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
               .onClick(() => {
                 this.selectedFilter = 'completed';
               });
 
             Button(`结束 ${this.abandonedSessions().length}`)
-              .height(36)
+              .height(34)
               .layoutWeight(1)
               .fontSize(13)
               .fontColor(this.filterButtonFontColor('abandoned'))
               .backgroundColor(this.filterButtonColor('abandoned'))
-              .borderRadius(12)
+              .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+              .borderRadius(DT.radiusS)
+              .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
               .onClick(() => {
                 this.selectedFilter = 'abandoned';
               });
@@ -1516,195 +1469,186 @@ export struct RecordPage {
           .width('100%');
 
           if (this.filteredSessions().length === 0) {
-            Column({ space: 12 }) {
-              Text(this.sessions.length === 0 ? '暂无记录' : '没有匹配记录')
-                .fontSize(18)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#1F2A2A');
-              Text(this.filterEmptyText())
-                .fontSize(14)
-                .fontColor('#7B8785')
-                .textAlign(TextAlign.Center);
+            AppCard({ cardPadding: 18 }) {
+              Column({ space: 12 }) {
+                Text(this.sessions.length === 0 ? '暂无记录' : '没有匹配记录')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.textPrimary);
+                Text(this.filterEmptyText())
+                  .fontSize(14)
+                  .fontColor(DT.textSecondary)
+                  .textAlign(TextAlign.Center);
 
-              Button(this.sessions.length === 0 ? '去专注' : '查看全部')
-                .height(38)
-                .fontSize(14)
-                .fontColor('#FFFFFF')
-                .backgroundColor('#5F9E8A')
-                .borderRadius(12)
-                .onClick(() => {
-                  if (this.sessions.length === 0) {
-                    AppStateService.setSelectedTabIndex(0);
-                  } else {
-                    this.selectedFilter = 'all';
+                AppButton({
+                  title: this.sessions.length === 0 ? '去专注' : '查看全部',
+                  variant: 'primary',
+                  buttonSize: 'm',
+                  stretch: false,
+                  onTap: () => {
+                    if (this.sessions.length === 0) {
+                      AppStateService.setSelectedTabIndex(0);
+                    } else {
+                      this.selectedFilter = 'all';
+                    }
                   }
                 });
-            }
+              }
               .width('100%')
-              .padding(18)
-              .alignItems(HorizontalAlign.Center)
-              .backgroundColor('#FFFFFF')
-              .borderRadius(18)
-              .border({
-                width: 1,
-                color: '#DDE8EA'
-              });
+              .alignItems(HorizontalAlign.Center);
+            }
           } else {
             ForEach(this.sessionGroups(), (group: SessionDayGroup) => {
-              Column({ space: 12 }) {
-                Row() {
-                  Column({ space: 3 }) {
-                    Text(group.title)
-                      .fontSize(17)
-                      .fontWeight(FontWeight.Medium)
-                      .fontColor('#1F2A2A');
-                    Text(group.detail)
-                      .fontSize(11)
-                      .fontColor('#7B8785');
-                  }
-                  .alignItems(HorizontalAlign.Start)
-                  .layoutWeight(1);
-
-                  Column({ space: 3 }) {
-                    Text(formatDuration(group.focusSeconds))
-                      .fontSize(15)
-                      .fontWeight(FontWeight.Medium)
-                      .fontColor('#5F9E8A');
-                    Text(`完成 ${group.completedCount} / 结束 ${group.abandonedCount}`)
-                      .fontSize(11)
-                      .fontColor('#7B8785');
-                  }
-                  .alignItems(HorizontalAlign.End);
-                }
-                .width('100%');
-
-                ForEach(group.sessions, (session: FocusSession) => {
-                  Row({ space: 10 }) {
-                    Column({ space: 6 }) {
-                      Row({ space: 8 }) {
-                        Text(this.sessionTitle(session))
-                          .fontSize(15)
-                          .fontWeight(FontWeight.Medium)
-                          .fontColor('#1F2A2A')
-                          .maxLines(1)
-                          .textOverflow({ overflow: TextOverflow.Ellipsis })
-                          .layoutWeight(1);
-
-                        Text(this.sessionStatusText(session))
-                          .fontSize(11)
-                          .fontColor(this.sessionStatusColor(session))
-                          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                          .backgroundColor(this.sessionStatusBgColor(session))
-                          .borderRadius(10);
-                      }
-                      .width('100%');
-
-                      Text(this.sessionMetaText(session))
-                        .fontSize(12)
-                        .fontColor('#7B8785')
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis });
-
-                      Row({ space: 5 }) {
-                        Circle({ width: 7, height: 7 })
-                          .fill(projectColor(session.projectName));
-                        Text(this.sessionProjectName(session))
-                          .fontSize(11)
-                          .fontColor('#4D7EA8');
-                      }
-                      .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                      .backgroundColor('#EAF2F8')
-                      .borderRadius(10);
-
-                      if (session.awaySeconds && session.awaySeconds > 0) {
-                        Text(`前台专注凭证：离开 ${session.awayCount ? session.awayCount : 1} 次 / ${formatDuration(session.awaySeconds)} 未计入`)
-                          .fontSize(11)
-                          .fontColor('#C96F5D')
-                          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                          .backgroundColor('#FFF0EC')
-                          .borderRadius(10);
-                      }
-
-                      if (session.returnProofRequiredCount && session.returnProofRequiredCount > 0) {
-                        Text(`守门整理：完成 ${session.returnProofCompletedCount ? session.returnProofCompletedCount : 0}/${session.returnProofRequiredCount} 次 · ${formatDuration(session.returnProofSeconds ? session.returnProofSeconds : 0)}`)
-                          .fontSize(11)
-                          .fontColor('#4D7EA8')
-                          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                          .backgroundColor('#EAF2F8')
-                          .borderRadius(10);
-                      }
-
-                      if (this.sessionStarterPlanText(session)) {
-                        Text(this.sessionStarterPlanText(session))
-                          .fontSize(11)
-                          .fontColor(session.starterPlanRiskLevel === 'high' ? '#C96F5D' : '#4D7EA8')
-                          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                          .backgroundColor(session.starterPlanRiskLevel === 'high' ? '#FFF0EC' : '#EAF2F8')
-                          .borderRadius(10);
-                      }
-
-                      if (this.sessionIntegrityText(session)) {
-                        Text(this.sessionIntegrityText(session))
-                          .fontSize(11)
-                          .fontColor('#C96F5D')
-                          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                          .backgroundColor('#FFF0EC')
-                          .borderRadius(10);
-                      }
-
-                      if (session.handoffNote && session.handoffNote.trim()) {
-                        Text(`退出交接：${session.handoffNote}`)
-                          .fontSize(11)
-                          .fontColor('#4D7EA8')
-                          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                          .backgroundColor('#EAF2F8')
-                          .borderRadius(10);
-                      }
-
-                      if (session.microActionCompletedCount && session.microActionCompletedCount > 0) {
-                        Text(`小动作：完成 ${session.microActionCompletedCount} 次${session.microActionResetCount && session.microActionResetCount > 0 ? ` / 调小 ${session.microActionResetCount} 次` : ''}`)
-                          .fontSize(11)
-                          .fontColor('#5F9E8A')
-                          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                          .backgroundColor('#EAF3F0')
-                          .borderRadius(10);
-                      }
+              AppCard({ cardPadding: 16 }) {
+                Column({ space: 12 }) {
+                  Row() {
+                    Column({ space: 3 }) {
+                      Text(group.title)
+                        .fontSize(17)
+                        .fontWeight(FontWeight.Medium)
+                        .fontColor(DT.textPrimary);
+                      Text(group.detail)
+                        .fontSize(11)
+                        .fontColor(DT.textSecondary);
                     }
                     .alignItems(HorizontalAlign.Start)
                     .layoutWeight(1);
 
-                    Column({ space: 6 }) {
-                      Text(formatDuration(session.actualDurationSeconds))
-                        .fontSize(14)
+                    Column({ space: 3 }) {
+                      Text(formatDuration(group.focusSeconds))
+                        .fontSize(15)
                         .fontWeight(FontWeight.Medium)
-                        .fontColor('#1F2A2A');
-
-                      Button('删除')
-                        .height(28)
-                        .fontSize(12)
-                        .fontColor('#C96F5D')
-                        .backgroundColor('#FFF0EC')
-                        .borderRadius(10)
-                        .onClick(() => {
-                          this.deleteSession(session);
-                        });
+                        .fontColor(DT.brand);
+                      Text(`完成 ${group.completedCount} / 结束 ${group.abandonedCount}`)
+                        .fontSize(11)
+                        .fontColor(DT.textSecondary);
                     }
                     .alignItems(HorizontalAlign.End);
                   }
-                  .width('100%')
-                  .padding(14)
-                  .backgroundColor('#F6F8F7')
-                  .borderRadius(14);
-                }, (session: FocusSession) => session.id);
+                  .width('100%');
+
+                  ForEach(group.sessions, (session: FocusSession) => {
+                    Row({ space: 10 }) {
+                      Column({ space: 6 }) {
+                        Row({ space: 8 }) {
+                          Text(this.sessionTitle(session))
+                            .fontSize(15)
+                            .fontWeight(FontWeight.Medium)
+                            .fontColor(DT.textPrimary)
+                            .maxLines(1)
+                            .textOverflow({ overflow: TextOverflow.Ellipsis })
+                            .layoutWeight(1);
+
+                          Text(this.sessionStatusText(session))
+                            .fontSize(11)
+                            .fontColor(this.sessionStatusColor(session))
+                            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                            .backgroundColor(this.sessionStatusBgColor(session))
+                            .borderRadius(DT.radiusS);
+                        }
+                        .width('100%');
+
+                        Text(this.sessionMetaText(session))
+                          .fontSize(12)
+                          .fontColor(DT.textSecondary)
+                          .maxLines(1)
+                          .textOverflow({ overflow: TextOverflow.Ellipsis });
+
+                        Row({ space: 5 }) {
+                          Circle({ width: 7, height: 7 })
+                            .fill(projectColor(session.projectName));
+                          Text(this.sessionProjectName(session))
+                            .fontSize(11)
+                            .fontColor(DT.info);
+                        }
+                        .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                        .backgroundColor(DT.bgInfoSoft)
+                        .borderRadius(DT.radiusS);
+
+                        if (session.awaySeconds && session.awaySeconds > 0) {
+                          Text(`前台专注凭证：离开 ${session.awayCount ? session.awayCount : 1} 次 / ${formatDuration(session.awaySeconds)} 未计入`)
+                            .fontSize(11)
+                            .fontColor(DT.danger)
+                            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                            .backgroundColor(DT.bgDangerSoft)
+                            .borderRadius(DT.radiusS);
+                        }
+
+                        if (session.returnProofRequiredCount && session.returnProofRequiredCount > 0) {
+                          Text(`守门整理：完成 ${session.returnProofCompletedCount ? session.returnProofCompletedCount : 0}/${session.returnProofRequiredCount} 次 · ${formatDuration(session.returnProofSeconds ? session.returnProofSeconds : 0)}`)
+                            .fontSize(11)
+                            .fontColor(DT.info)
+                            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                            .backgroundColor(DT.bgInfoSoft)
+                            .borderRadius(DT.radiusS);
+                        }
+
+                        if (this.sessionStarterPlanText(session)) {
+                          Text(this.sessionStarterPlanText(session))
+                            .fontSize(11)
+                            .fontColor(session.starterPlanRiskLevel === 'high' ? DT.danger : DT.info)
+                            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                            .backgroundColor(session.starterPlanRiskLevel === 'high' ? DT.bgDangerSoft : DT.bgInfoSoft)
+                            .borderRadius(DT.radiusS);
+                        }
+
+                        if (this.sessionIntegrityText(session)) {
+                          Text(this.sessionIntegrityText(session))
+                            .fontSize(11)
+                            .fontColor(DT.danger)
+                            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                            .backgroundColor(DT.bgDangerSoft)
+                            .borderRadius(DT.radiusS);
+                        }
+
+                        if (session.handoffNote && session.handoffNote.trim()) {
+                          Text(`退出交接：${session.handoffNote}`)
+                            .fontSize(11)
+                            .fontColor(DT.info)
+                            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                            .backgroundColor(DT.bgInfoSoft)
+                            .borderRadius(DT.radiusS);
+                        }
+
+                        if (session.microActionCompletedCount && session.microActionCompletedCount > 0) {
+                          Text(`小动作：完成 ${session.microActionCompletedCount} 次${session.microActionResetCount && session.microActionResetCount > 0 ? ` / 调小 ${session.microActionResetCount} 次` : ''}`)
+                            .fontSize(11)
+                            .fontColor(DT.brand)
+                            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                            .backgroundColor(DT.bgBrandSoft)
+                            .borderRadius(DT.radiusS);
+                        }
+                      }
+                      .alignItems(HorizontalAlign.Start)
+                      .layoutWeight(1);
+
+                      Column({ space: 6 }) {
+                        Text(formatDuration(session.actualDurationSeconds))
+                          .fontSize(14)
+                          .fontWeight(FontWeight.Medium)
+                          .fontColor(DT.textPrimary);
+
+                        Button('删除')
+                          .height(28)
+                          .fontSize(12)
+                          .fontColor(DT.danger)
+                          .backgroundColor(DT.bgDangerSoft)
+                          .borderRadius(DT.radiusS)
+                          .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
+                          .onClick(() => {
+                            this.deleteSession(session);
+                          });
+                      }
+                      .alignItems(HorizontalAlign.End);
+                    }
+                    .width('100%')
+                    .padding(14)
+                    .backgroundColor(DT.bgInput)
+                    .borderRadius(DT.radiusM);
+                  }, (session: FocusSession) => session.id);
+                }
+                .width('100%');
               }
-              .width('100%')
-              .padding(16)
-              .backgroundColor('#FFFFFF')
-              .borderRadius(18)
-              .border({
-                width: 1,
-                color: '#DDE8EA'
-              });
             }, (group: SessionDayGroup) => `${group.startAt}`);
           }
         }
@@ -1714,6 +1658,6 @@ export struct RecordPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F6F8F7');
+    .backgroundColor(DT.bgPage);
   }
 }

@@ -11,6 +11,10 @@ import { TimerService } from '../services/TimerService';
 import { WidgetService } from '../services/WidgetService';
 import { projectColor } from '../utils/projectColorCore';
 import { suggestProjectNames } from '../utils/projectSuggestCore';
+import { DT } from '../utils/designTokens';
+import { AppCard } from '../components/AppCard';
+import { AppButton } from '../components/AppButton';
+import { AnimatedProgressBar } from '../components/AnimatedProgressBar';
 
 type TaskFilter = 'active' | 'completed' | 'archived';
 type TaskPlanFilter = 'all' | 'today' | 'tomorrow' | 'unplanned' | 'high';
@@ -228,11 +232,11 @@ export struct TaskPage {
       buttons: [
         {
           text: '取消',
-          color: '#5F9E8A'
+          color: DT.brand
         },
         {
           text: '归档',
-          color: '#7B8785'
+          color: DT.textSecondary
         }
       ]
     });
@@ -260,11 +264,11 @@ export struct TaskPage {
       buttons: [
         {
           text: '取消',
-          color: '#5F9E8A'
+          color: DT.brand
         },
         {
           text: '删除',
-          color: '#C96F5D'
+          color: DT.danger
         }
       ]
     });
@@ -362,11 +366,11 @@ export struct TaskPage {
       buttons: [
         {
           text: '取消',
-          color: '#5F9E8A'
+          color: DT.brand
         },
         {
           text: '删除',
-          color: '#C96F5D'
+          color: DT.danger
         }
       ]
     });
@@ -472,26 +476,26 @@ export struct TaskPage {
 
   private priorityColor(priority: TaskPriority): string {
     if (priority === 'high') {
-      return '#C96F5D';
+      return DT.danger;
     }
 
     if (priority === 'low') {
-      return '#7B8785';
+      return DT.textSecondary;
     }
 
-    return '#5F9E8A';
+    return DT.brand;
   }
 
   private priorityBgColor(priority: TaskPriority): string {
     if (priority === 'high') {
-      return '#FFF0EC';
+      return DT.bgDangerSoft;
     }
 
     if (priority === 'low') {
-      return '#F1F3F2';
+      return DT.bgNeutralSoft;
     }
 
-    return '#EAF3F0';
+    return DT.bgBrandSoft;
   }
 
   private plannedForLabel(plannedFor: TaskPlannedFor): string {
@@ -512,18 +516,18 @@ export struct TaskPage {
 
   private plannedForColor(plannedFor: TaskPlannedFor): string {
     if (plannedFor === 'today') {
-      return '#4D7EA8';
+      return DT.info;
     }
 
     if (plannedFor === 'tomorrow') {
-      return '#5F9E8A';
+      return DT.brand;
     }
 
     if (plannedFor === 'later') {
-      return '#7B8785';
+      return DT.textSecondary;
     }
 
-    return '#9AA6A3';
+    return DT.textPlaceholder;
   }
 
   private projectLabel(task: Task): string {
@@ -627,10 +631,6 @@ export struct TaskPage {
     return Math.min(100, Math.floor(this.totalActiveCompletedCount() * 100 / estimatedCount));
   }
 
-  private activeProgressWidth(): string {
-    return `${this.activeProgressPercent()}%`;
-  }
-
   private highLeverageTask(): Task | undefined {
     let nextTask: Task | undefined = undefined;
     let maxRemainingCount = -1;
@@ -711,19 +711,19 @@ export struct TaskPage {
   }
 
   private filterButtonColor(filter: TaskFilter): string {
-    return this.selectedFilter === filter ? '#5F9E8A' : '#DDE8EA';
+    return this.selectedFilter === filter ? DT.brand : DT.bgNeutralSoft;
   }
 
   private filterButtonFontColor(filter: TaskFilter): string {
-    return this.selectedFilter === filter ? '#FFFFFF' : '#1F2A2A';
+    return this.selectedFilter === filter ? '#FFFFFF' : DT.textSecondary;
   }
 
   private planFilterButtonColor(filter: TaskPlanFilter): string {
-    return this.selectedPlanFilter === filter ? '#4D7EA8' : '#DDE8EA';
+    return this.selectedPlanFilter === filter ? DT.brand : DT.bgNeutralSoft;
   }
 
   private planFilterButtonFontColor(filter: TaskPlanFilter): string {
-    return this.selectedPlanFilter === filter ? '#FFFFFF' : '#1F2A2A';
+    return this.selectedPlanFilter === filter ? '#FFFFFF' : DT.textSecondary;
   }
 
   private planFilterCount(filter: TaskPlanFilter): number {
@@ -758,22 +758,6 @@ export struct TaskPage {
     return '开始';
   }
 
-  private startButtonColor(task: Task): string {
-    if (task.status !== 'active') {
-      return '#DDE8EA';
-    }
-
-    if (this.isTaskInCurrentTimer(task)) {
-      return '#4D7EA8';
-    }
-
-    if (this.isFocusBlocked()) {
-      return '#7B8785';
-    }
-
-    return '#5F9E8A';
-  }
-
   private taskProgressPercent(task: Task): number {
     if (task.estimatedFocusCount <= 0) {
       return 100;
@@ -782,24 +766,20 @@ export struct TaskPage {
     return Math.min(100, Math.floor(task.completedFocusCount * 100 / task.estimatedFocusCount));
   }
 
-  private taskProgressWidth(task: Task): string {
-    return `${this.taskProgressPercent(task)}%`;
-  }
-
   private taskProgressColor(task: Task): string {
     if (task.status === 'archived') {
-      return '#9AA6A3';
+      return DT.textPlaceholder;
     }
 
     if (task.status === 'completed') {
-      return '#7B8785';
+      return DT.textSecondary;
     }
 
     if (this.taskProgressPercent(task) >= 100) {
-      return '#4D7EA8';
+      return DT.info;
     }
 
-    return '#5F9E8A';
+    return DT.brand;
   }
 
   private taskStatusText(task: Task): string {
@@ -824,22 +804,22 @@ export struct TaskPage {
 
   private taskStatusColor(task: Task): string {
     if (task.status === 'archived') {
-      return '#9AA6A3';
+      return DT.textPlaceholder;
     }
 
     if (task.status === 'completed') {
-      return '#7B8785';
+      return DT.textSecondary;
     }
 
     if (this.isTaskInCurrentTimer(task)) {
-      return '#4D7EA8';
+      return DT.info;
     }
 
     if (this.taskProgressPercent(task) >= 100) {
-      return '#4D7EA8';
+      return DT.info;
     }
 
-    return '#5F9E8A';
+    return DT.brand;
   }
 
   private taskRemainingText(task: Task): string {
@@ -890,402 +870,397 @@ export struct TaskPage {
           Text('任务')
             .fontSize(28)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1F2A2A')
+            .fontColor(DT.textPrimary)
             .layoutWeight(1);
 
           Button(this.showCreateForm ? '×' : '+')
-            .width(44)
-            .height(44)
             .fontSize(24)
             .fontColor('#FFFFFF')
-            .backgroundColor(this.showCreateForm ? '#7B8785' : '#5F9E8A')
+            .backgroundColor(this.showCreateForm ? DT.textSecondary : DT.brand)
+            .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+            .width(44)
+            .height(44)
             .borderRadius(22)
+            .shadow(DT.shadowButton)
+            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
             .onClick(() => {
               this.toggleCreateForm();
             });
         }
         .width('100%');
 
-        Button(this.templateButtonTitle())
-          .height(40)
-          .width('100%')
-          .fontSize(14)
-          .fontColor(this.showTemplates ? '#1F2A2A' : '#FFFFFF')
-          .backgroundColor(this.showTemplates ? '#DDE8EA' : '#4D7EA8')
-          .borderRadius(14)
-          .onClick(() => {
+        AppButton({
+          title: this.templateButtonTitle(),
+          variant: this.showTemplates ? 'ghost' : 'info',
+          buttonSize: 'm',
+          onTap: () => {
             this.toggleTemplates();
-          });
-
-        Column({ space: 14 }) {
-          Row() {
-            Column({ space: 5 }) {
-              Text('执行看板')
-                .fontSize(15)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#7B8785');
-              Text(this.planHeadline())
-                .fontSize(20)
-                .fontWeight(FontWeight.Bold)
-                .fontColor('#1F2A2A')
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis });
-            }
-            .alignItems(HorizontalAlign.Start)
-            .layoutWeight(1);
-
-            Button(this.planButtonTitle())
-              .height(36)
-              .width(72)
-              .fontSize(13)
-              .fontColor('#FFFFFF')
-              .backgroundColor(this.isFocusBlocked() ? '#4D7EA8' : '#5F9E8A')
-              .borderRadius(12)
-              .onClick(() => {
-                this.onPlanAction();
-              });
           }
-          .width('100%')
-          .alignItems(VerticalAlign.Center);
-
-          Text(this.planDescription())
-            .fontSize(13)
-            .fontColor('#7B8785')
-            .width('100%');
-
-          Column({ space: 7 }) {
-            Row() {
-              Text(`${this.activeProgressPercent()}%`)
-                .fontSize(12)
-                .fontColor('#5F9E8A')
-                .layoutWeight(1);
-              Text(`剩余 ${this.totalActiveRemainingCount()} 次专注`)
-                .fontSize(12)
-                .fontColor('#7B8785');
-            }
-            .width('100%');
-
-            Stack({ alignContent: Alignment.Start }) {
-              Row()
-                .width('100%')
-                .height(8)
-                .backgroundColor('#EEF3F2')
-                .borderRadius(4);
-
-              Row()
-                .width(this.activeProgressWidth())
-                .height(8)
-                .backgroundColor('#5F9E8A')
-                .borderRadius(4);
-            }
-            .width('100%')
-            .height(8);
-          }
-          .width('100%');
-
-          Row({ space: 10 }) {
-            Column({ space: 3 }) {
-              Text(`${this.activeTasks().length}`)
-                .fontSize(17)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#1F2A2A');
-              Text('待办任务')
-                .fontSize(11)
-                .fontColor('#7B8785');
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start);
-
-            Column({ space: 3 }) {
-              Text(`${this.completedTasks().length}`)
-                .fontSize(17)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#4D7EA8');
-              Text('已完成')
-                .fontSize(11)
-                .fontColor('#7B8785');
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start);
-
-            Column({ space: 3 }) {
-              Text(`${this.archivedTasks().length}`)
-                .fontSize(17)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#7B8785');
-              Text('已归档')
-                .fontSize(11)
-                .fontColor('#7B8785');
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start);
-          }
-          .width('100%');
-
-          Row({ space: 10 }) {
-            Column({ space: 3 }) {
-              Text(this.suggestedTodayText())
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#1F2A2A');
-              Text('今日建议')
-                .fontSize(11)
-                .fontColor('#7B8785');
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start);
-
-            Column({ space: 3 }) {
-              Text(this.carryoverText())
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#4D7EA8');
-              Text('明日结转')
-                .fontSize(11)
-                .fontColor('#7B8785');
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start);
-
-            Column({ space: 3 }) {
-              Text(this.weeklyRemainingText())
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#5F9E8A');
-              Text('本周还差')
-                .fontSize(11)
-                .fontColor('#7B8785');
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start);
-          }
-          .width('100%');
-
-          Row({ space: 10 }) {
-            Column({ space: 3 }) {
-              Text(`${this.planningSnapshot.todayTaskCount}`)
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#4D7EA8');
-              Text('今天')
-                .fontSize(11)
-                .fontColor('#7B8785');
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start);
-
-            Column({ space: 3 }) {
-              Text(`${this.planningSnapshot.tomorrowTaskCount}`)
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#5F9E8A');
-              Text('明天')
-                .fontSize(11)
-                .fontColor('#7B8785');
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start);
-
-            Column({ space: 3 }) {
-              Text(`${this.planningSnapshot.unplannedTaskCount}`)
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#7B8785');
-              Text('未计划')
-                .fontSize(11)
-                .fontColor('#7B8785');
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start);
-
-            Column({ space: 3 }) {
-              Text(`${this.planningSnapshot.highPriorityTaskCount}`)
-                .fontSize(16)
-                .fontWeight(FontWeight.Medium)
-                .fontColor('#C96F5D');
-              Text('高优先')
-                .fontSize(11)
-                .fontColor('#7B8785');
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start);
-          }
-          .width('100%');
-        }
-        .width('100%')
-        .padding(16)
-        .backgroundColor('#FFFFFF')
-        .borderRadius(18)
-        .border({
-          width: 1,
-          color: '#DDE8EA'
         });
 
-        if (this.showTemplates) {
-          Column({ space: 12 }) {
+        AppCard({ cardPadding: 16 }) {
+          Column({ space: 14 }) {
             Row() {
-              Column({ space: 4 }) {
-                Text('一键计划')
-                  .fontSize(17)
+              Column({ space: 5 }) {
+                Text('执行看板')
+                  .fontSize(15)
                   .fontWeight(FontWeight.Medium)
-                  .fontColor('#1F2A2A');
-                Text('不知道从哪开始时，先生成一组可执行任务。')
-                  .fontSize(12)
-                  .fontColor('#7B8785');
+                  .fontColor(DT.textSecondary);
+                Text(this.planHeadline())
+                  .fontSize(20)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor(DT.textPrimary)
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis });
               }
               .alignItems(HorizontalAlign.Start)
               .layoutWeight(1);
 
-              if (this.activeTasks().length > 0) {
-                Button('存为模板')
-                  .height(32)
+              AppButton({
+                title: this.planButtonTitle(),
+                variant: this.isFocusBlocked() ? 'info' : 'primary',
+                buttonSize: 's',
+                stretch: false,
+                onTap: () => {
+                  this.onPlanAction();
+                }
+              });
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Center);
+
+            Text(this.planDescription())
+              .fontSize(13)
+              .fontColor(DT.textSecondary)
+              .width('100%');
+
+            Column({ space: 7 }) {
+              Row() {
+                Text(`${this.activeProgressPercent()}%`)
                   .fontSize(12)
-                  .fontColor('#4D7EA8')
-                  .backgroundColor('#EAF2F8')
-                  .borderRadius(11)
-                  .onClick(() => {
-                    this.showSaveTemplateForm = !this.showSaveTemplateForm;
-                  });
+                  .fontColor(DT.brand)
+                  .layoutWeight(1);
+                Text(`剩余 ${this.totalActiveRemainingCount()} 次专注`)
+                  .fontSize(12)
+                  .fontColor(DT.textSecondary);
               }
+              .width('100%');
+
+              AnimatedProgressBar({
+                percent: this.activeProgressPercent(),
+                barColor: DT.brand,
+                trackColor: DT.track,
+                barHeight: 8
+              });
             }
             .width('100%');
 
-            if (this.showSaveTemplateForm) {
-              Column({ space: 10 }) {
-                TextInput({ placeholder: '模板名称，例如 我的工作日', text: this.templateTitleDraft })
-                  .height(42)
-                  .fontSize(13)
-                  .backgroundColor('#FFFFFF')
-                  .borderRadius(12)
-                  .maxLength(20)
-                  .onChange((value: string) => {
-                    this.templateTitleDraft = value;
-                  });
-                Row({ space: 8 }) {
-                  Text(`把当前 ${Math.min(this.activeTasks().length, 6)} 个待办存成可复用模板`)
-                    .fontSize(11)
-                    .fontColor('#7B8785')
-                    .layoutWeight(1);
-                  Button('保存')
-                    .height(32)
-                    .width(64)
-                    .fontSize(12)
-                    .fontColor('#FFFFFF')
-                    .backgroundColor('#5F9E8A')
-                    .borderRadius(11)
-                    .onClick(() => {
-                      this.saveCurrentAsTemplate();
-                    });
-                }
-                .width('100%')
-                .alignItems(VerticalAlign.Center);
+            Row({ space: 10 }) {
+              Column({ space: 3 }) {
+                Text(`${this.activeTasks().length}`)
+                  .fontSize(17)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.textPrimary);
+                Text('待办任务')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary);
               }
-              .width('100%')
-              .padding(12)
-              .backgroundColor('#F6F8F7')
-              .borderRadius(14);
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
+
+              Column({ space: 3 }) {
+                Text(`${this.completedTasks().length}`)
+                  .fontSize(17)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.info);
+                Text('已完成')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary);
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
+
+              Column({ space: 3 }) {
+                Text(`${this.archivedTasks().length}`)
+                  .fontSize(17)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.textSecondary);
+                Text('已归档')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary);
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
             }
+            .width('100%');
 
-            ForEach(this.templates, (template: PlanTemplate) => {
-              Row({ space: 12 }) {
-                Column({ space: 5 }) {
-                  Row({ space: 6 }) {
-                    Text(template.title)
-                      .fontSize(16)
-                      .fontWeight(FontWeight.Medium)
-                      .fontColor('#1F2A2A');
-                    if (template.custom) {
-                      Text('自定义')
-                        .fontSize(10)
-                        .fontColor('#5F9E8A')
-                        .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-                        .backgroundColor('#EAF3F0')
-                        .borderRadius(8);
-                    }
-                  }
-                  .alignItems(VerticalAlign.Center);
-                  Text(template.subtitle)
-                    .fontSize(12)
-                    .fontColor('#7B8785')
-                    .maxLines(2)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis });
-                  Text(this.templateMetaText(template))
-                    .fontSize(11)
-                    .fontColor('#4D7EA8');
-                }
-                .alignItems(HorizontalAlign.Start)
-                .layoutWeight(1);
-
-                if (template.custom) {
-                  Button('删除')
-                    .height(36)
-                    .width(52)
-                    .fontSize(13)
-                    .fontColor('#C96F5D')
-                    .backgroundColor('#FFF0EC')
-                    .borderRadius(12)
-                    .onClick(() => {
-                      this.deleteCustomTemplate(template);
-                    });
-                }
-
-                Button('生成')
-                  .height(36)
-                  .width(68)
-                  .fontSize(13)
-                  .fontColor('#FFFFFF')
-                  .backgroundColor('#5F9E8A')
-                  .borderRadius(12)
-                  .onClick(() => {
-                    this.applyPlanTemplate(template);
-                  });
+            Row({ space: 10 }) {
+              Column({ space: 3 }) {
+                Text(this.suggestedTodayText())
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.textPrimary);
+                Text('今日建议')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary);
               }
-              .width('100%')
-              .padding(12)
-              .backgroundColor('#F6F8F7')
-              .borderRadius(14);
-            }, (template: PlanTemplate) => template.id);
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
+
+              Column({ space: 3 }) {
+                Text(this.carryoverText())
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.info);
+                Text('明日结转')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary);
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
+
+              Column({ space: 3 }) {
+                Text(this.weeklyRemainingText())
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.brand);
+                Text('本周还差')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary);
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
+            }
+            .width('100%');
+
+            Row({ space: 10 }) {
+              Column({ space: 3 }) {
+                Text(`${this.planningSnapshot.todayTaskCount}`)
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.info);
+                Text('今天')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary);
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
+
+              Column({ space: 3 }) {
+                Text(`${this.planningSnapshot.tomorrowTaskCount}`)
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.brand);
+                Text('明天')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary);
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
+
+              Column({ space: 3 }) {
+                Text(`${this.planningSnapshot.unplannedTaskCount}`)
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.textSecondary);
+                Text('未计划')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary);
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
+
+              Column({ space: 3 }) {
+                Text(`${this.planningSnapshot.highPriorityTaskCount}`)
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.danger);
+                Text('高优先')
+                  .fontSize(11)
+                  .fontColor(DT.textSecondary);
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Start);
+            }
+            .width('100%');
+          }
+          .width('100%');
+        }
+
+        if (this.showTemplates) {
+          Column() {
+            AppCard({ cardPadding: 16 }) {
+              Column({ space: 12 }) {
+                Row() {
+                  Column({ space: 4 }) {
+                    Text('一键计划')
+                      .fontSize(17)
+                      .fontWeight(FontWeight.Medium)
+                      .fontColor(DT.textPrimary);
+                    Text('不知道从哪开始时，先生成一组可执行任务。')
+                      .fontSize(12)
+                      .fontColor(DT.textSecondary);
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1);
+
+                  if (this.activeTasks().length > 0) {
+                    AppButton({
+                      title: '存为模板',
+                      variant: 'softInfo',
+                      buttonSize: 's',
+                      stretch: false,
+                      onTap: () => {
+                        this.showSaveTemplateForm = !this.showSaveTemplateForm;
+                      }
+                    });
+                  }
+                }
+                .width('100%');
+
+                if (this.showSaveTemplateForm) {
+                  Column({ space: 10 }) {
+                    TextInput({ placeholder: '模板名称，例如 我的工作日', text: this.templateTitleDraft })
+                      .height(44)
+                      .fontSize(13)
+                      .fontColor(DT.textPrimary)
+                      .placeholderColor(DT.textPlaceholder)
+                      .backgroundColor('#FFFFFF')
+                      .borderRadius(DT.radiusS)
+                      .maxLength(20)
+                      .onChange((value: string) => {
+                        this.templateTitleDraft = value;
+                      });
+                    Row({ space: 8 }) {
+                      Text(`把当前 ${Math.min(this.activeTasks().length, 6)} 个待办存成可复用模板`)
+                        .fontSize(11)
+                        .fontColor(DT.textSecondary)
+                        .layoutWeight(1);
+                      AppButton({
+                        title: '保存',
+                        variant: 'primary',
+                        buttonSize: 's',
+                        stretch: false,
+                        onTap: () => {
+                          this.saveCurrentAsTemplate();
+                        }
+                      });
+                    }
+                    .width('100%')
+                    .alignItems(VerticalAlign.Center);
+                  }
+                  .width('100%')
+                  .padding(12)
+                  .backgroundColor(DT.bgInput)
+                  .borderRadius(DT.radiusM)
+                  .transition(TransitionEffect.OPACITY
+                    .combine(TransitionEffect.translate({ y: 12 }))
+                    .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
+                }
+
+                ForEach(this.templates, (template: PlanTemplate) => {
+                  Row({ space: 12 }) {
+                    Column({ space: 5 }) {
+                      Row({ space: 6 }) {
+                        Text(template.title)
+                          .fontSize(16)
+                          .fontWeight(FontWeight.Medium)
+                          .fontColor(DT.textPrimary);
+                        if (template.custom) {
+                          Text('自定义')
+                            .fontSize(11)
+                            .fontColor(DT.brand)
+                            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                            .backgroundColor(DT.bgBrandSoft)
+                            .borderRadius(DT.radiusS);
+                        }
+                      }
+                      .alignItems(VerticalAlign.Center);
+                      Text(template.subtitle)
+                        .fontSize(12)
+                        .fontColor(DT.textSecondary)
+                        .maxLines(2)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis });
+                      Text(this.templateMetaText(template))
+                        .fontSize(11)
+                        .fontColor(DT.info);
+                    }
+                    .alignItems(HorizontalAlign.Start)
+                    .layoutWeight(1);
+
+                    if (template.custom) {
+                      AppButton({
+                        title: '删除',
+                        variant: 'softDanger',
+                        buttonSize: 's',
+                        stretch: false,
+                        onTap: () => {
+                          this.deleteCustomTemplate(template);
+                        }
+                      });
+                    }
+
+                    AppButton({
+                      title: '生成',
+                      variant: 'primary',
+                      buttonSize: 's',
+                      stretch: false,
+                      onTap: () => {
+                        this.applyPlanTemplate(template);
+                      }
+                    });
+                  }
+                  .width('100%')
+                  .padding(12)
+                  .backgroundColor(DT.bgInput)
+                  .borderRadius(DT.radiusM);
+                }, (template: PlanTemplate) => template.id);
+              }
+              .width('100%');
+            }
           }
           .width('100%')
-          .padding(16)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(18)
-          .border({
-            width: 1,
-            color: '#DDE8EA'
-          });
+          .transition(TransitionEffect.OPACITY
+            .combine(TransitionEffect.translate({ y: 12 }))
+            .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
         }
 
         Row({ space: 8 }) {
           Button(`待办 ${this.activeTasks().length}`)
-            .height(36)
-            .layoutWeight(1)
             .fontSize(13)
             .fontColor(this.filterButtonFontColor('active'))
             .backgroundColor(this.filterButtonColor('active'))
-            .borderRadius(12)
+            .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+            .height(34)
+            .layoutWeight(1)
+            .borderRadius(DT.radiusS)
+            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
             .onClick(() => {
               this.selectedFilter = 'active';
             });
 
           Button(`完成 ${this.completedTasks().length}`)
-            .height(36)
-            .layoutWeight(1)
             .fontSize(13)
             .fontColor(this.filterButtonFontColor('completed'))
             .backgroundColor(this.filterButtonColor('completed'))
-            .borderRadius(12)
+            .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+            .height(34)
+            .layoutWeight(1)
+            .borderRadius(DT.radiusS)
+            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
             .onClick(() => {
               this.selectedFilter = 'completed';
             });
 
           Button(`归档 ${this.archivedTasks().length}`)
-            .height(36)
-            .layoutWeight(1)
             .fontSize(13)
             .fontColor(this.filterButtonFontColor('archived'))
             .backgroundColor(this.filterButtonColor('archived'))
-            .borderRadius(12)
+            .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+            .height(34)
+            .layoutWeight(1)
+            .borderRadius(DT.radiusS)
+            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
             .onClick(() => {
               this.selectedFilter = 'archived';
             });
@@ -1296,34 +1271,40 @@ export struct TaskPage {
           Column({ space: 8 }) {
             Row({ space: 8 }) {
               Button(`全部 ${this.planFilterCount('all')}`)
-                .height(34)
-                .layoutWeight(1)
                 .fontSize(12)
                 .fontColor(this.planFilterButtonFontColor('all'))
                 .backgroundColor(this.planFilterButtonColor('all'))
-                .borderRadius(11)
+                .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                .height(34)
+                .layoutWeight(1)
+                .borderRadius(DT.radiusS)
+                .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                 .onClick(() => {
                   this.selectedPlanFilter = 'all';
                 });
 
               Button(`今天 ${this.planFilterCount('today')}`)
-                .height(34)
-                .layoutWeight(1)
                 .fontSize(12)
                 .fontColor(this.planFilterButtonFontColor('today'))
                 .backgroundColor(this.planFilterButtonColor('today'))
-                .borderRadius(11)
+                .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                .height(34)
+                .layoutWeight(1)
+                .borderRadius(DT.radiusS)
+                .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                 .onClick(() => {
                   this.selectedPlanFilter = 'today';
                 });
 
               Button(`明天 ${this.planFilterCount('tomorrow')}`)
-                .height(34)
-                .layoutWeight(1)
                 .fontSize(12)
                 .fontColor(this.planFilterButtonFontColor('tomorrow'))
                 .backgroundColor(this.planFilterButtonColor('tomorrow'))
-                .borderRadius(11)
+                .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                .height(34)
+                .layoutWeight(1)
+                .borderRadius(DT.radiusS)
+                .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                 .onClick(() => {
                   this.selectedPlanFilter = 'tomorrow';
                 });
@@ -1332,23 +1313,27 @@ export struct TaskPage {
 
             Row({ space: 8 }) {
               Button(`未计划 ${this.planFilterCount('unplanned')}`)
-                .height(34)
-                .layoutWeight(1)
                 .fontSize(12)
                 .fontColor(this.planFilterButtonFontColor('unplanned'))
                 .backgroundColor(this.planFilterButtonColor('unplanned'))
-                .borderRadius(11)
+                .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                .height(34)
+                .layoutWeight(1)
+                .borderRadius(DT.radiusS)
+                .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                 .onClick(() => {
                   this.selectedPlanFilter = 'unplanned';
                 });
 
               Button(`高优先 ${this.planFilterCount('high')}`)
-                .height(34)
-                .layoutWeight(1)
                 .fontSize(12)
                 .fontColor(this.planFilterButtonFontColor('high'))
                 .backgroundColor(this.planFilterButtonColor('high'))
-                .borderRadius(11)
+                .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                .height(34)
+                .layoutWeight(1)
+                .borderRadius(DT.radiusS)
+                .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                 .onClick(() => {
                   this.selectedPlanFilter = 'high';
                 });
@@ -1364,197 +1349,201 @@ export struct TaskPage {
               Text(this.timerState.mode === 'break' ? '当前在歇息' : '当前在专注')
                 .fontSize(15)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1F2A2A');
+                .fontColor(DT.textPrimary);
               Text(this.timerState.taskTitle ? this.timerState.taskTitle : '自由专注')
                 .fontSize(13)
-                .fontColor('#7B8785');
+                .fontColor(DT.textSecondary);
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1);
 
-            Button('查看')
-              .height(36)
-              .width(76)
-              .fontSize(14)
-              .fontColor('#FFFFFF')
-              .backgroundColor('#5F9E8A')
-              .borderRadius(12)
-              .onClick(() => {
+            AppButton({
+              title: '查看',
+              variant: 'primary',
+              buttonSize: 's',
+              stretch: false,
+              onTap: () => {
                 AppStateService.setSelectedTabIndex(0);
-              });
+              }
+            });
           }
           .width('100%')
           .padding(14)
-          .backgroundColor('#EAF3F0')
-          .borderRadius(16);
+          .backgroundColor(DT.bgBrandSoft)
+          .borderRadius(DT.radiusL)
+          .transition(TransitionEffect.OPACITY
+            .combine(TransitionEffect.translate({ y: 12 }))
+            .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
         }
 
         if (this.showCreateForm) {
-          Column({ space: 14 }) {
-            Text('新建任务')
-              .fontSize(17)
-              .fontWeight(FontWeight.Medium)
-              .fontColor('#1F2A2A')
-              .width('100%');
+          Column() {
+            AppCard({ cardPadding: 16 }) {
+              Column({ space: 14 }) {
+                Text('新建任务')
+                  .fontSize(17)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DT.textPrimary)
+                  .width('100%');
 
-            TextInput({ placeholder: '写下要专注完成的事', text: this.draftTitle })
-              .height(48)
-              .fontSize(15)
-              .fontColor('#1F2A2A')
-              .placeholderColor('#9AA6A3')
-              .backgroundColor('#F6F8F7')
-              .borderRadius(14)
-              .onChange((value: string) => {
-                this.draftTitle = value;
-              });
-
-            TextInput({ placeholder: '项目/领域，例如 工作、学习、个人', text: this.draftProjectName })
-              .height(44)
-              .fontSize(14)
-              .fontColor('#1F2A2A')
-              .placeholderColor('#9AA6A3')
-              .backgroundColor('#F6F8F7')
-              .borderRadius(14)
-              .onChange((value: string) => {
-                this.draftProjectName = value;
-              });
-
-            if (this.projectSuggestions.length > 0) {
-              Flex({ wrap: FlexWrap.Wrap }) {
-                ForEach(this.projectSuggestions, (name: string) => {
-                  Row({ space: 5 }) {
-                    Circle({ width: 7, height: 7 })
-                      .fill(projectColor(name));
-                    Text(name)
-                      .fontSize(12)
-                      .fontColor(this.draftProjectName === name ? '#FFFFFF' : '#4D7EA8');
-                  }
-                  .padding({ left: 10, right: 10, top: 5, bottom: 5 })
-                  .backgroundColor(this.draftProjectName === name ? '#4D7EA8' : '#EAF2F8')
-                  .borderRadius(11)
-                  .margin({ right: 8, bottom: 8 })
-                  .onClick(() => {
-                    this.draftProjectName = name;
+                TextInput({ placeholder: '写下要专注完成的事', text: this.draftTitle })
+                  .height(44)
+                  .fontSize(15)
+                  .fontColor(DT.textPrimary)
+                  .placeholderColor(DT.textPlaceholder)
+                  .backgroundColor(DT.bgInput)
+                  .borderRadius(DT.radiusS)
+                  .onChange((value: string) => {
+                    this.draftTitle = value;
                   });
-                }, (name: string) => name);
+
+                TextInput({ placeholder: '项目/领域，例如 工作、学习、个人', text: this.draftProjectName })
+                  .height(44)
+                  .fontSize(14)
+                  .fontColor(DT.textPrimary)
+                  .placeholderColor(DT.textPlaceholder)
+                  .backgroundColor(DT.bgInput)
+                  .borderRadius(DT.radiusS)
+                  .onChange((value: string) => {
+                    this.draftProjectName = value;
+                  });
+
+                if (this.projectSuggestions.length > 0) {
+                  Flex({ wrap: FlexWrap.Wrap }) {
+                    ForEach(this.projectSuggestions, (name: string) => {
+                      Row({ space: 5 }) {
+                        Circle({ width: 7, height: 7 })
+                          .fill(projectColor(name));
+                        Text(name)
+                          .fontSize(12)
+                          .fontColor(this.draftProjectName === name ? '#FFFFFF' : DT.info);
+                      }
+                      .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                      .backgroundColor(this.draftProjectName === name ? DT.info : DT.bgInfoSoft)
+                      .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                      .borderRadius(DT.radiusS)
+                      .margin({ right: 8, bottom: 8 })
+                      .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
+                      .onClick(() => {
+                        this.draftProjectName = name;
+                      });
+                    }, (name: string) => name);
+                  }
+                  .width('100%');
+                }
+
+                Row() {
+                  Text('预计专注')
+                    .fontSize(15)
+                    .fontColor(DT.textPrimary)
+                    .layoutWeight(1);
+                  Button('-')
+                    .width(36)
+                    .height(36)
+                    .fontSize(20)
+                    .fontColor(DT.textPrimary)
+                    .backgroundColor(DT.bgNeutralSoft)
+                    .borderRadius(18)
+                    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
+                    .onClick(() => {
+                      this.changeDraftEstimate(-1);
+                    });
+                  Text(`${this.draftEstimate} 次`)
+                    .fontSize(15)
+                    .fontColor(DT.textPrimary)
+                    .width(70)
+                    .textAlign(TextAlign.Center);
+                  Button('+')
+                    .width(36)
+                    .height(36)
+                    .fontSize(20)
+                    .fontColor('#FFFFFF')
+                    .backgroundColor(DT.brand)
+                    .borderRadius(18)
+                    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
+                    .onClick(() => {
+                      this.changeDraftEstimate(1);
+                    });
+                }
+                .width('100%');
+
+                Row({ space: 10 }) {
+                  Button(`优先级 ${this.priorityLabel(this.draftPriority)}`)
+                    .fontSize(13)
+                    .fontColor(this.priorityColor(this.draftPriority))
+                    .backgroundColor(this.priorityBgColor(this.draftPriority))
+                    .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                    .height(38)
+                    .layoutWeight(1)
+                    .borderRadius(DT.radiusS)
+                    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
+                    .onClick(() => {
+                      this.cycleDraftPriority();
+                    });
+
+                  Button(`计划 ${this.plannedForLabel(this.draftPlannedFor)}`)
+                    .fontSize(13)
+                    .fontColor(this.plannedForColor(this.draftPlannedFor))
+                    .backgroundColor(DT.bgInput)
+                    .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                    .height(38)
+                    .layoutWeight(1)
+                    .borderRadius(DT.radiusS)
+                    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
+                    .onClick(() => {
+                      this.cycleDraftPlannedFor();
+                    });
+                }
+                .width('100%');
+
+                AppButton({
+                  title: '保存任务',
+                  variant: 'primary',
+                  buttonSize: 'l',
+                  onTap: () => {
+                    this.addTask();
+                  }
+                });
               }
               .width('100%');
             }
-
-            Row() {
-              Text('预计专注')
-                .fontSize(15)
-                .fontColor('#1F2A2A')
-                .layoutWeight(1);
-              Button('-')
-                .width(36)
-                .height(36)
-                .fontSize(20)
-                .fontColor('#1F2A2A')
-                .backgroundColor('#DDE8EA')
-                .borderRadius(18)
-                .onClick(() => {
-                  this.changeDraftEstimate(-1);
-                });
-              Text(`${this.draftEstimate} 次`)
-                .fontSize(15)
-                .fontColor('#1F2A2A')
-                .width(70)
-                .textAlign(TextAlign.Center);
-              Button('+')
-                .width(36)
-                .height(36)
-                .fontSize(20)
-                .fontColor('#FFFFFF')
-                .backgroundColor('#5F9E8A')
-                .borderRadius(18)
-                .onClick(() => {
-                  this.changeDraftEstimate(1);
-                });
-            }
-            .width('100%');
-
-            Row({ space: 10 }) {
-              Button(`优先级 ${this.priorityLabel(this.draftPriority)}`)
-                .height(38)
-                .layoutWeight(1)
-                .fontSize(13)
-                .fontColor(this.priorityColor(this.draftPriority))
-                .backgroundColor(this.priorityBgColor(this.draftPriority))
-                .borderRadius(12)
-                .onClick(() => {
-                  this.cycleDraftPriority();
-                });
-
-              Button(`计划 ${this.plannedForLabel(this.draftPlannedFor)}`)
-                .height(38)
-                .layoutWeight(1)
-                .fontSize(13)
-                .fontColor(this.plannedForColor(this.draftPlannedFor))
-                .backgroundColor('#F6F8F7')
-                .borderRadius(12)
-                .onClick(() => {
-                  this.cycleDraftPlannedFor();
-                });
-            }
-            .width('100%');
-
-            Button('保存任务')
-              .height(48)
-              .width('100%')
-              .fontSize(16)
-              .fontColor('#FFFFFF')
-              .backgroundColor('#5F9E8A')
-              .borderRadius(14)
-              .onClick(() => {
-                this.addTask();
-              });
           }
           .width('100%')
-          .padding(16)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(18)
-          .border({
-            width: 1,
-            color: '#DDE8EA'
-          });
+          .transition(TransitionEffect.OPACITY
+            .combine(TransitionEffect.translate({ y: 12 }))
+            .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
         }
 
         if (this.filteredTasks().length === 0) {
-          Column({ space: 12 }) {
-            Text(this.emptyTitle())
-              .fontSize(17)
-              .fontWeight(FontWeight.Medium)
-              .fontColor('#1F2A2A');
-            Text(this.emptyDescription())
-              .fontSize(14)
-              .fontColor('#7B8785')
-              .textAlign(TextAlign.Center);
+          AppCard({ cardPadding: 24 }) {
+            Column({ space: 12 }) {
+              Text(this.emptyTitle())
+                .fontSize(17)
+                .fontWeight(FontWeight.Medium)
+                .fontColor(DT.textPrimary);
+              Text(this.emptyDescription())
+                .fontSize(14)
+                .fontColor(DT.textSecondary)
+                .textAlign(TextAlign.Center);
 
-            Button(this.selectedFilter === 'active' ? '新建任务' : '查看待办')
-              .height(38)
-              .fontSize(14)
-              .fontColor('#FFFFFF')
-              .backgroundColor('#5F9E8A')
-              .borderRadius(12)
-              .onClick(() => {
-                if (this.selectedFilter === 'active') {
-                  this.showCreateForm = true;
-                  this.cancelEdit();
-                } else {
-                  this.selectedFilter = 'active';
+              AppButton({
+                title: this.selectedFilter === 'active' ? '新建任务' : '查看待办',
+                variant: 'primary',
+                buttonSize: 'm',
+                stretch: false,
+                onTap: () => {
+                  if (this.selectedFilter === 'active') {
+                    this.showCreateForm = true;
+                    this.cancelEdit();
+                  } else {
+                    this.selectedFilter = 'active';
+                  }
                 }
               });
+            }
+            .width('100%')
+            .alignItems(HorizontalAlign.Center);
           }
-          .width('100%')
-          .padding(24)
-          .alignItems(HorizontalAlign.Center)
-          .backgroundColor('#FFFFFF')
-          .borderRadius(18)
-          .border({
-            width: 1,
-            color: '#DDE8EA'
-          });
         } else {
           ForEach(this.filteredTasks(), (task: Task) => {
             Column({ space: 14 }) {
@@ -1563,14 +1552,14 @@ export struct TaskPage {
                   Text(task.title)
                     .fontSize(17)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor(task.status === 'completed' || task.status === 'archived' ? '#7B8785' : '#1F2A2A')
+                    .fontColor(task.status === 'completed' || task.status === 'archived' ? DT.textSecondary : DT.textPrimary)
                     .decoration({
                       type: task.status === 'completed' ? TextDecorationType.LineThrough : TextDecorationType.None
                     });
 
                   Text(`已完成 ${task.completedFocusCount}/${task.estimatedFocusCount} 次专注`)
                     .fontSize(13)
-                    .fontColor('#7B8785');
+                    .fontColor(DT.textSecondary);
 
                   Row({ space: 6 }) {
                     Row({ space: 5 }) {
@@ -1578,25 +1567,25 @@ export struct TaskPage {
                         .fill(projectColor(task.projectName));
                       Text(this.projectLabel(task))
                         .fontSize(11)
-                        .fontColor('#4D7EA8');
+                        .fontColor(DT.info);
                     }
                     .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                    .backgroundColor('#EAF2F8')
-                    .borderRadius(10);
+                    .backgroundColor(DT.bgInfoSoft)
+                    .borderRadius(DT.radiusS);
 
                     Text(this.priorityLabel(this.taskPriority(task)))
                       .fontSize(11)
                       .fontColor(this.priorityColor(this.taskPriority(task)))
                       .padding({ left: 8, right: 8, top: 4, bottom: 4 })
                       .backgroundColor(this.priorityBgColor(this.taskPriority(task)))
-                      .borderRadius(10);
+                      .borderRadius(DT.radiusS);
 
                     Text(this.plannedForLabel(this.taskPlannedFor(task)))
                       .fontSize(11)
                       .fontColor(this.plannedForColor(this.taskPlannedFor(task)))
                       .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                      .backgroundColor('#F6F8F7')
-                      .borderRadius(10);
+                      .backgroundColor(DT.bgInput)
+                      .borderRadius(DT.radiusS);
                   }
                   .width('100%');
                 }
@@ -1618,62 +1607,48 @@ export struct TaskPage {
 
                   Text(this.taskRemainingText(task))
                     .fontSize(12)
-                    .fontColor('#7B8785');
+                    .fontColor(DT.textSecondary);
                 }
                 .width('100%');
 
-                Stack({ alignContent: Alignment.Start }) {
-                  Row()
-                    .width('100%')
-                    .height(8)
-                    .backgroundColor('#EEF3F2')
-                    .borderRadius(4);
-
-                  Row()
-                    .width(this.taskProgressWidth(task))
-                    .height(8)
-                    .backgroundColor(this.taskProgressColor(task))
-                    .borderRadius(4);
-                }
-                .width('100%')
-                .height(8);
+                AnimatedProgressBar({
+                  percent: this.taskProgressPercent(task),
+                  barColor: this.taskProgressColor(task),
+                  trackColor: DT.track,
+                  barHeight: 8
+                });
               }
               .width('100%');
 
               if (this.isTaskInCurrentTimer(task)) {
-                Row({ space: 10 }) {
-                  Button('查看当前专注')
-                    .height(40)
-                    .layoutWeight(1)
-                    .fontSize(14)
-                    .fontColor('#FFFFFF')
-                    .backgroundColor('#4D7EA8')
-                    .borderRadius(12)
-                    .onClick(() => {
-                      AppStateService.setSelectedTabIndex(0);
-                    });
-                }
-                .width('100%');
+                AppButton({
+                  title: '查看当前专注',
+                  variant: 'info',
+                  buttonSize: 'm',
+                  onTap: () => {
+                    AppStateService.setSelectedTabIndex(0);
+                  }
+                });
               } else if (this.isEditing(task)) {
                 Column({ space: 12 }) {
                   TextInput({ placeholder: '任务名称', text: this.editTitle })
-                    .height(46)
+                    .height(44)
                     .fontSize(15)
-                    .fontColor('#1F2A2A')
-                    .placeholderColor('#9AA6A3')
-                    .backgroundColor('#F6F8F7')
-                    .borderRadius(14)
+                    .fontColor(DT.textPrimary)
+                    .placeholderColor(DT.textPlaceholder)
+                    .backgroundColor('#FFFFFF')
+                    .borderRadius(DT.radiusS)
                     .onChange((value: string) => {
                       this.editTitle = value;
                     });
 
                   TextInput({ placeholder: '项目/领域', text: this.editProjectName })
-                    .height(42)
+                    .height(44)
                     .fontSize(14)
-                    .fontColor('#1F2A2A')
-                    .placeholderColor('#9AA6A3')
-                    .backgroundColor('#F6F8F7')
-                    .borderRadius(14)
+                    .fontColor(DT.textPrimary)
+                    .placeholderColor(DT.textPlaceholder)
+                    .backgroundColor('#FFFFFF')
+                    .borderRadius(DT.radiusS)
                     .onChange((value: string) => {
                       this.editProjectName = value;
                     });
@@ -1686,12 +1661,14 @@ export struct TaskPage {
                             .fill(projectColor(name));
                           Text(name)
                             .fontSize(12)
-                            .fontColor(this.editProjectName === name ? '#FFFFFF' : '#4D7EA8');
+                            .fontColor(this.editProjectName === name ? '#FFFFFF' : DT.info);
                         }
                         .padding({ left: 10, right: 10, top: 5, bottom: 5 })
-                        .backgroundColor(this.editProjectName === name ? '#4D7EA8' : '#EAF2F8')
-                        .borderRadius(11)
+                        .backgroundColor(this.editProjectName === name ? DT.info : DT.bgInfoSoft)
+                        .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                        .borderRadius(DT.radiusS)
                         .margin({ right: 8, bottom: 8 })
+                        .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                         .onClick(() => {
                           this.editProjectName = name;
                         });
@@ -1703,21 +1680,22 @@ export struct TaskPage {
                   Row() {
                     Text('预计专注')
                       .fontSize(14)
-                      .fontColor('#1F2A2A')
+                      .fontColor(DT.textPrimary)
                       .layoutWeight(1);
                     Button('-')
                       .width(34)
                       .height(34)
                       .fontSize(18)
-                      .fontColor('#1F2A2A')
-                      .backgroundColor('#DDE8EA')
+                      .fontColor(DT.textPrimary)
+                      .backgroundColor(DT.bgNeutralSoft)
                       .borderRadius(17)
+                      .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                       .onClick(() => {
                         this.changeEditEstimate(-1);
                       });
                     Text(`${this.editEstimate} 次`)
                       .fontSize(14)
-                      .fontColor('#1F2A2A')
+                      .fontColor(DT.textPrimary)
                       .width(68)
                       .textAlign(TextAlign.Center);
                     Button('+')
@@ -1725,8 +1703,9 @@ export struct TaskPage {
                       .height(34)
                       .fontSize(18)
                       .fontColor('#FFFFFF')
-                      .backgroundColor('#5F9E8A')
+                      .backgroundColor(DT.brand)
                       .borderRadius(17)
+                      .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                       .onClick(() => {
                         this.changeEditEstimate(1);
                       });
@@ -1735,27 +1714,27 @@ export struct TaskPage {
 
                   Row({ space: 10 }) {
                     Button(`优先级 ${this.priorityLabel(this.editPriority)}`)
-                      .height(36)
-                      .layoutWeight(1)
                       .fontSize(13)
                       .fontColor(this.priorityColor(this.editPriority))
                       .backgroundColor(this.priorityBgColor(this.editPriority))
-                      .borderRadius(12)
+                      .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                      .height(36)
+                      .layoutWeight(1)
+                      .borderRadius(DT.radiusS)
+                      .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                       .onClick(() => {
                         this.cycleEditPriority();
                       });
 
                     Button(`计划 ${this.plannedForLabel(this.editPlannedFor)}`)
-                      .height(36)
-                      .layoutWeight(1)
                       .fontSize(13)
                       .fontColor(this.plannedForColor(this.editPlannedFor))
                       .backgroundColor('#FFFFFF')
-                      .borderRadius(12)
-                      .border({
-                        width: 1,
-                        color: '#DDE8EA'
-                      })
+                      .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
+                      .height(36)
+                      .layoutWeight(1)
+                      .borderRadius(DT.radiusS)
+                      .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                       .onClick(() => {
                         this.cycleEditPlannedFor();
                       });
@@ -1763,77 +1742,90 @@ export struct TaskPage {
                   .width('100%');
 
                   Row({ space: 10 }) {
-                    Button('取消')
-                      .height(38)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#1F2A2A')
-                      .backgroundColor('#DDE8EA')
-                      .borderRadius(12)
-                      .onClick(() => {
-                        this.cancelEdit();
+                    Column() {
+                      AppButton({
+                        title: '取消',
+                        variant: 'ghost',
+                        buttonSize: 'm',
+                        onTap: () => {
+                          this.cancelEdit();
+                        }
                       });
+                    }
+                    .layoutWeight(1);
 
-                    Button('保存')
-                      .height(38)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#FFFFFF')
-                      .backgroundColor('#5F9E8A')
-                      .borderRadius(12)
-                      .onClick(() => {
-                        this.saveEdit(task);
+                    Column() {
+                      AppButton({
+                        title: '保存',
+                        variant: 'primary',
+                        buttonSize: 'm',
+                        onTap: () => {
+                          this.saveEdit(task);
+                        }
                       });
+                    }
+                    .layoutWeight(1);
                   }
                   .width('100%');
                 }
                 .width('100%')
                 .padding(12)
-                .backgroundColor('#F6F8F7')
-                .borderRadius(14);
+                .backgroundColor(DT.bgInput)
+                .borderRadius(DT.radiusM)
+                .transition(TransitionEffect.OPACITY
+                  .combine(TransitionEffect.translate({ y: 12 }))
+                  .animation({ duration: DT.durBase, curve: Curve.EaseOut }));
               } else if (task.status === 'active') {
                 Column({ space: 10 }) {
                   Row({ space: 8 }) {
                     Button('今天')
+                      .fontSize(12)
+                      .fontColor(this.taskPlannedFor(task) === 'today' ? '#FFFFFF' : DT.info)
+                      .backgroundColor(this.taskPlannedFor(task) === 'today' ? DT.info : DT.bgInfoSoft)
+                      .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
                       .height(32)
                       .layoutWeight(1)
-                      .fontSize(12)
-                      .fontColor(this.taskPlannedFor(task) === 'today' ? '#FFFFFF' : '#4D7EA8')
-                      .backgroundColor(this.taskPlannedFor(task) === 'today' ? '#4D7EA8' : '#EAF2F8')
-                      .borderRadius(10)
+                      .borderRadius(DT.radiusS)
+                      .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                       .onClick(() => {
                         this.quickSetPlannedFor(task, 'today');
                       });
 
                     Button('明天')
+                      .fontSize(12)
+                      .fontColor(this.taskPlannedFor(task) === 'tomorrow' ? '#FFFFFF' : DT.brand)
+                      .backgroundColor(this.taskPlannedFor(task) === 'tomorrow' ? DT.brand : DT.bgBrandSoft)
+                      .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
                       .height(32)
                       .layoutWeight(1)
-                      .fontSize(12)
-                      .fontColor(this.taskPlannedFor(task) === 'tomorrow' ? '#FFFFFF' : '#5F9E8A')
-                      .backgroundColor(this.taskPlannedFor(task) === 'tomorrow' ? '#5F9E8A' : '#EAF3F0')
-                      .borderRadius(10)
+                      .borderRadius(DT.radiusS)
+                      .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                       .onClick(() => {
                         this.quickSetPlannedFor(task, 'tomorrow');
                       });
 
                     Button('未计划')
+                      .fontSize(12)
+                      .fontColor(this.taskPlannedFor(task) === 'none' ? '#FFFFFF' : DT.textSecondary)
+                      .backgroundColor(this.taskPlannedFor(task) === 'none' ? DT.textSecondary : DT.bgNeutralSoft)
+                      .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
                       .height(32)
                       .layoutWeight(1)
-                      .fontSize(12)
-                      .fontColor(this.taskPlannedFor(task) === 'none' ? '#FFFFFF' : '#7B8785')
-                      .backgroundColor(this.taskPlannedFor(task) === 'none' ? '#7B8785' : '#F1F3F2')
-                      .borderRadius(10)
+                      .borderRadius(DT.radiusS)
+                      .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                       .onClick(() => {
                         this.quickSetPlannedFor(task, 'none');
                       });
 
                     Button('高优先')
+                      .fontSize(12)
+                      .fontColor(this.taskPriority(task) === 'high' ? '#FFFFFF' : DT.danger)
+                      .backgroundColor(this.taskPriority(task) === 'high' ? DT.danger : DT.bgDangerSoft)
+                      .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
                       .height(32)
                       .layoutWeight(1)
-                      .fontSize(12)
-                      .fontColor(this.taskPriority(task) === 'high' ? '#FFFFFF' : '#C96F5D')
-                      .backgroundColor(this.taskPriority(task) === 'high' ? '#C96F5D' : '#FFF0EC')
-                      .borderRadius(10)
+                      .borderRadius(DT.radiusS)
+                      .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.95 })
                       .onClick(() => {
                         this.quickToggleHighPriority(task);
                       });
@@ -1841,134 +1833,122 @@ export struct TaskPage {
                   .width('100%');
 
                   Row({ space: 10 }) {
-                    Button(this.startButtonTitle(task))
-                      .height(40)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#FFFFFF')
-                      .backgroundColor(this.startButtonColor(task))
-                      .borderRadius(12)
-                      .enabled(task.status === 'active')
-                      .onClick(() => {
-                        this.startTask(task);
+                    Column() {
+                      AppButton({
+                        title: this.startButtonTitle(task),
+                        variant: this.isFocusBlocked() ? 'ghost' : 'primary',
+                        buttonSize: 'm',
+                        onTap: () => {
+                          this.startTask(task);
+                        }
                       });
+                    }
+                    .layoutWeight(1);
 
-                    Button('完成')
-                      .height(40)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#1F2A2A')
-                      .backgroundColor('#DDE8EA')
-                      .borderRadius(12)
-                      .onClick(() => {
-                        this.completeTask(task);
+                    Column() {
+                      AppButton({
+                        title: '完成',
+                        variant: 'soft',
+                        buttonSize: 'm',
+                        onTap: () => {
+                          this.completeTask(task);
+                        }
                       });
+                    }
+                    .layoutWeight(1);
                   }
                   .width('100%');
 
                   Row({ space: 10 }) {
-                    Button('编辑')
-                      .height(38)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#1F2A2A')
-                      .backgroundColor('#FFFFFF')
-                      .borderRadius(12)
-                      .border({
-                        width: 1,
-                        color: '#DDE8EA'
-                      })
-                      .onClick(() => {
-                        this.startEdit(task);
+                    Column() {
+                      AppButton({
+                        title: '编辑',
+                        variant: 'ghost',
+                        buttonSize: 's',
+                        onTap: () => {
+                          this.startEdit(task);
+                        }
                       });
+                    }
+                    .layoutWeight(1);
 
-                    Button('归档')
-                      .height(38)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#7B8785')
-                      .backgroundColor('#FFFFFF')
-                      .borderRadius(12)
-                      .border({
-                        width: 1,
-                        color: '#DDE8EA'
-                      })
-                      .onClick(() => {
-                        this.archiveTask(task);
+                    Column() {
+                      AppButton({
+                        title: '归档',
+                        variant: 'ghost',
+                        buttonSize: 's',
+                        onTap: () => {
+                          this.archiveTask(task);
+                        }
                       });
+                    }
+                    .layoutWeight(1);
 
-                    Button('删除')
-                      .height(38)
-                      .layoutWeight(1)
-                      .fontSize(14)
-                      .fontColor('#C96F5D')
-                      .backgroundColor('#FFFFFF')
-                      .borderRadius(12)
-                      .border({
-                        width: 1,
-                        color: '#E8D3CE'
-                      })
-                      .onClick(() => {
-                        this.deleteTask(task);
+                    Column() {
+                      AppButton({
+                        title: '删除',
+                        variant: 'softDanger',
+                        buttonSize: 's',
+                        onTap: () => {
+                          this.deleteTask(task);
+                        }
                       });
+                    }
+                    .layoutWeight(1);
                   }
                   .width('100%');
                 }
                 .width('100%');
               } else {
                 Row({ space: 10 }) {
-                  Button('恢复')
-                    .height(40)
-                    .layoutWeight(1)
-                    .fontSize(14)
-                    .fontColor('#FFFFFF')
-                    .backgroundColor('#5F9E8A')
-                    .borderRadius(12)
-                    .onClick(() => {
-                      this.restoreTask(task);
-                    });
-
-                  Button('编辑')
-                    .height(40)
-                    .layoutWeight(1)
-                    .fontSize(14)
-                    .fontColor('#1F2A2A')
-                    .backgroundColor('#DDE8EA')
-                    .borderRadius(12)
-                    .onClick(() => {
-                      this.startEdit(task);
-                    });
-
-                  Button(task.status === 'completed' ? '归档' : '删除')
-                    .height(40)
-                    .layoutWeight(1)
-                    .fontSize(14)
-                    .fontColor(task.status === 'completed' ? '#7B8785' : '#C96F5D')
-                    .backgroundColor('#FFFFFF')
-                    .borderRadius(12)
-                    .border({
-                      width: 1,
-                      color: task.status === 'completed' ? '#DDE8EA' : '#E8D3CE'
-                    })
-                    .onClick(() => {
-                      if (task.status === 'completed') {
-                        this.archiveTask(task);
-                      } else {
-                        this.deleteTask(task);
+                  Column() {
+                    AppButton({
+                      title: '恢复',
+                      variant: 'primary',
+                      buttonSize: 'm',
+                      onTap: () => {
+                        this.restoreTask(task);
                       }
                     });
+                  }
+                  .layoutWeight(1);
+
+                  Column() {
+                    AppButton({
+                      title: '编辑',
+                      variant: 'ghost',
+                      buttonSize: 'm',
+                      onTap: () => {
+                        this.startEdit(task);
+                      }
+                    });
+                  }
+                  .layoutWeight(1);
+
+                  Column() {
+                    AppButton({
+                      title: task.status === 'completed' ? '归档' : '删除',
+                      variant: task.status === 'completed' ? 'ghost' : 'softDanger',
+                      buttonSize: 'm',
+                      onTap: () => {
+                        if (task.status === 'completed') {
+                          this.archiveTask(task);
+                        } else {
+                          this.deleteTask(task);
+                        }
+                      }
+                    });
+                  }
+                  .layoutWeight(1);
                 }
                 .width('100%');
               }
             }
             .width('100%')
             .padding(16)
-            .backgroundColor('#FFFFFF')
-            .borderRadius(18)
-            .border({
-              width: 1,
-              color: '#DDE8EA'
-            });
+            .backgroundColor(DT.bgCard)
+            .borderRadius(DT.radiusL)
+            .shadow(DT.shadowContact);
           }, (task: Task) => task.id);
         }
       }
@@ -1977,6 +1957,6 @@ export struct TaskPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F6F8F7');
+    .backgroundColor(DT.bgPage);
   }
 }
