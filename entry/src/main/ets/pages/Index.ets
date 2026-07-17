@@ -84,9 +84,23 @@ struct Index {
     return this.isDarkBar() ? '#8A9490' : DT.textPlaceholder;
   }
 
+  // 系统 SymbolGlyph 矢量符号：线性绘制风格，可随选中态着色并播放弹跳动效。
+  private tabSymbol(index: number): Resource {
+    if (index === 0) {
+      return $r('sys.symbol.timer');
+    }
+    if (index === 1) {
+      return $r('sys.symbol.checkmark_square');
+    }
+    if (index === 2) {
+      return $r('sys.symbol.histogram');
+    }
+    return $r('sys.symbol.gearshape');
+  }
+
   @Builder
   tabItem(index: number) {
-    Column({ space: 5 }) {
+    Column({ space: 3 }) {
       // 选中指示条：随选中态渐显。
       Row()
         .width(20)
@@ -94,14 +108,19 @@ struct Index {
         .backgroundColor(this.selectedIndex === index ? this.tabActiveColor() : DT.transparent)
         .animation({ duration: DT.durFast, curve: Curve.EaseInOut })
         .borderRadius(2);
+      SymbolGlyph(this.tabSymbol(index))
+        .fontSize(22)
+        .fontColor([this.selectedIndex === index ? this.tabActiveColor() : this.tabInactiveColor()])
+        .fontWeight(this.selectedIndex === index ? FontWeight.Medium : FontWeight.Regular)
+        .symbolEffect(new BounceSymbolEffect(EffectScope.WHOLE, EffectDirection.UP), this.selectedIndex === index);
       Text(TAB_ITEMS[index].label)
-        .fontSize(14)
+        .fontSize(DT.fontCaption)
         .fontWeight(this.selectedIndex === index ? FontWeight.Medium : FontWeight.Normal)
         .fontColor(this.selectedIndex === index ? this.tabActiveColor() : this.tabInactiveColor())
         .animation({ duration: DT.durFast, curve: Curve.EaseInOut });
     }
     .width('100%')
-    .padding({ top: 6, bottom: 6 })
+    .padding({ top: 4, bottom: 4 })
     .alignItems(HorizontalAlign.Center)
     .justifyContent(FlexAlign.Center);
   }
