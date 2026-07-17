@@ -9,6 +9,8 @@ import { PromptService } from '../services/PromptService';
 @Component
 struct Index {
   @State selectedIndex: number = 0;
+  @State pageBackgroundColor: string = '#F6F8F7';
+  @State barBackgroundColor: string = '#FFFFFF';
   private tabsController: TabsController = new TabsController();
   private ticker: number = -1;
 
@@ -28,6 +30,15 @@ struct Index {
       if (this.selectedIndex !== nextIndex) {
         this.selectedIndex = nextIndex;
         this.tabsController.changeIndex(nextIndex);
+      }
+
+      // 专注进行中让 Tabs 背景和底部栏跟随主题，避免深色主题下白色断层。
+      const themeBar = AppStateService.getThemeBar();
+      if (this.pageBackgroundColor !== themeBar.backgroundColor) {
+        this.pageBackgroundColor = themeBar.backgroundColor;
+      }
+      if (this.barBackgroundColor !== themeBar.barColor) {
+        this.barBackgroundColor = themeBar.barColor;
       }
     }, 200);
   }
@@ -63,8 +74,8 @@ struct Index {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F6F8F7')
-    .barBackgroundColor('#FFFFFF')
+    .backgroundColor(this.pageBackgroundColor)
+    .barBackgroundColor(this.barBackgroundColor)
     .barMode(BarMode.Fixed)
     .onChange((index: number) => {
       this.selectedIndex = index;

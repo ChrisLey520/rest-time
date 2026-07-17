@@ -105,6 +105,7 @@ export struct FocusPage {
 
   aboutToDisappear(): void {
     this.stopTicker();
+    AppStateService.clearThemeBar();
   }
 
   private async restoreTimer(): Promise<void> {
@@ -131,7 +132,17 @@ export struct FocusPage {
     this.ticker = setInterval(async () => {
       await TimerService.markPresence();
       await this.restoreTimer();
+      this.publishThemeBar();
     }, 500);
+  }
+
+  // 专注进行中把主题背景/卡片色发布给根 Tabs，让底部栏与整页同色。
+  private publishThemeBar(): void {
+    if (this.isFocusRunning()) {
+      AppStateService.setThemeBar(this.focusTheme.backgroundColor, this.focusTheme.cardColor);
+    } else {
+      AppStateService.clearThemeBar();
+    }
   }
 
   private stopTicker(): void {
