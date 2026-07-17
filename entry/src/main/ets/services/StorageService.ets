@@ -9,6 +9,7 @@ import { ErrorLogEntry } from '../utils/errorLogCore';
 import { PlanTemplate } from '../utils/planTemplateCore';
 import { normalizeProState, ProState } from '../utils/proCore';
 import { normalizeWallet, StreakGuardWallet } from '../utils/streakGuardCore';
+import { TomorrowFirst } from '../utils/tomorrowFirstCore';
 
 const PREFERENCES_NAME = 'qishi_preferences';
 
@@ -27,6 +28,7 @@ interface StorageKeys {
   focusThemeId: string;
   focusEffectId: string;
   proState: string;
+  tomorrowFirst: string;
 }
 
 const STORAGE_KEYS: StorageKeys = {
@@ -43,7 +45,8 @@ const STORAGE_KEYS: StorageKeys = {
   streakGuardWallet: 'qishi.streakGuardWallet',
   focusThemeId: 'qishi.focusThemeId',
   focusEffectId: 'qishi.focusEffectId',
-  proState: 'qishi.proState'
+  proState: 'qishi.proState',
+  tomorrowFirst: 'qishi.tomorrowFirst'
 };
 
 export interface PomodoroProgress {
@@ -291,6 +294,14 @@ export class StorageService {
 
   static async saveProState(state: ProState): Promise<void> {
     await StorageService.writeJson<ProState>(STORAGE_KEYS.proState, state);
+  }
+
+  static async getTomorrowFirst(): Promise<TomorrowFirst | null> {
+    return StorageService.readJson<TomorrowFirst | null>(STORAGE_KEYS.tomorrowFirst, null);
+  }
+
+  static async saveTomorrowFirst(entry: TomorrowFirst | null): Promise<void> {
+    await StorageService.writeJson<TomorrowFirst | null>(STORAGE_KEYS.tomorrowFirst, entry);
   }
 
   static async saveBillingSettings(settings: BillingSettings): Promise<void> {

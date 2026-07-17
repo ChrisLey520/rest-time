@@ -23,6 +23,12 @@ import { FocusEffect, FocusTheme, FocusThemeService } from '../services/FocusThe
 import { findFocusEffect } from '../utils/focusEffectCore';
 import { findFocusTheme } from '../utils/focusThemeCore';
 import { TIME_COIN_DAILY_CAP, earnedTimeCoinsToday } from '../utils/timeCoinCore';
+import {
+  createTomorrowFirst,
+  TomorrowFirst,
+  tomorrowFirstHeadline,
+  tomorrowFirstState
+} from '../utils/tomorrowFirstCore';
 
 @Component
 export struct FocusPage {
@@ -95,6 +101,9 @@ export struct FocusPage {
   @State todayTimeCoins: number = 0;
   @State focusTheme: FocusTheme = findFocusTheme('default');
   @State focusEffect: FocusEffect = findFocusEffect('ripple');
+  @State tomorrowFirst: TomorrowFirst | null = null;
+  @State showTomorrowFirstForm: boolean = false;
+  @State tomorrowFirstDraft: string = '';
   private ticker: number = -1;
   private widgetSnapshotKey: string = '';
 
@@ -124,6 +133,7 @@ export struct FocusPage {
     this.completedFocusRounds = await PomodoroProgressService.getCompletedFocusRounds();
     this.focusTheme = await FocusThemeService.getActiveTheme();
     this.focusEffect = await FocusThemeService.getActiveEffect();
+    this.tomorrowFirst = await StorageService.getTomorrowFirst();
     await this.refreshWidgetIfChanged();
   }
 
@@ -313,7 +323,66 @@ export struct FocusPage {
     await TimerService.clearTimer();
     await this.restoreTimer();
     await WidgetService.refreshAllForms();
+    // 收尾时给明天留一句：优先建议下一个任务，也可手写或跳过。
+    const nextTask = this.nextQueuedTask();
+    this.tomorrowFirstDraft = nextTask ? nextTask.title : '';
+    this.showTomorrowFirstForm = true;
+  }
+
+  private async onSaveTomorrowFirst(): Promise<void> {
+    const nextTask = this.activeTasks.find((task: Task) => task.title === this.tomorrowFirstDraft.trim());
+    const entry = createTomorrowFirst(this.tomorrowFirstDraft, nextTask ? nextTask.id : '', Date.now());
+    await StorageService.saveTomorrowFirst(entry);
+    this.tomorrowFirst = entry;
+    this.showTomorrowFirstForm = false;
+    this.tomorrowFirstDraft = '';
+    PromptService.showToast(entry ? '已留给明天的自己' : '今天的专注已收好');
+  }
+
+  private async onSkipTomorrowFirst(): Promise<void> {
+    this.showTomorrowFirstForm = false;
+    this.tomorrowFirstDraft = '';
     PromptService.showToast('今天的专注已收好');
+  }
+
+  private async onStartTomorrowFirst(): Promise<void> {
+    const entry = this.tomorrowFirst;
+    if (!entry) {
+      return;
+    }
+
+    // 承诺卡一键开始:有任务归属走任务,否则按承诺文本自由专注。
+    const task = this.activeTasks.find((item: Task) => item.id === entry.taskId);
+    const result = await TimerService.tryStartFocus(
+      undefined,
+      task ? task.id : undefined,
+      task ? task.title : entry.text,
+      task ? task.projectName : undefined
+    );
+    this.timerState = result.state;
+    if (!result.didStart) {
+      PromptService.showToast(result.message);
+      return;
+    }
+
+    await StorageService.saveTomorrowFirst(null);
+    this.tomorrowFirst = null;
+    this.remainingSeconds = await TimerService.getRemainingSeconds();
+    await this.restoreTimer();
+    await WidgetService.refreshAllForms();
+  }
+
+  private async onDismissTomorrowFirst(): Promise<void> {
+    await StorageService.saveTomorrowFirst(null);
+    this.tomorrowFirst = null;
+  }
+
+  private isTomorrowFirstReady(): boolean {
+    return this.tomorrowFirst !== null && tomorrowFirstState(this.tomorrowFirst, Date.now()) === 'ready';
+  }
+
+  private tomorrowFirstTitle(): string {
+    return this.tomorrowFirst ? tomorrowFirstHeadline(this.tomorrowFirst, Date.now()) : '';
   }
 
   private async onGuardShrinkAndContinue(): Promise<void> {
@@ -1414,6 +1483,112 @@ export struct FocusPage {
 
           if (this.timerState.status === 'idle' && this.timerState.mode === 'focus') {
             Column({ space: 10 }) {
+              if (this.showTomorrowFirstForm) {
+                Column({ space: 10 }) {
+                  Text('明天先做哪件？')
+                    .fontSize(15)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor('#1F2A2A')
+                    .width('100%');
+
+                  Text('写一句留给明天的自己，明早打开就能直接开始。')
+                    .fontSize(12)
+                    .fontColor('#7B8785')
+                    .width('100%');
+
+                  TextInput({ placeholder: '例如：写完第三章开头', text: this.tomorrowFirstDraft })
+                    .height(44)
+                    .fontSize(14)
+                    .maxLength(30)
+                    .backgroundColor('#F6F8F7')
+                    .borderRadius(12)
+                    .onChange((value: string) => {
+                      this.tomorrowFirstDraft = value;
+                    });
+
+                  Row({ space: 10 }) {
+                    Button('留给明天')
+                      .height(42)
+                      .layoutWeight(1)
+                      .fontSize(14)
+                      .fontColor('#FFFFFF')
+                      .backgroundColor('#5F9E8A')
+                      .borderRadius(14)
+                      .onClick(() => {
+                        this.onSaveTomorrowFirst();
+                      });
+
+                    Button('先不写')
+                      .height(42)
+                      .fontSize(13)
+                      .fontColor('#7B8785')
+                      .backgroundColor('#F1F3F2')
+                      .borderRadius(14)
+                      .onClick(() => {
+                        this.onSkipTomorrowFirst();
+                      });
+                  }
+                  .width('100%');
+                }
+                .width('100%')
+                .padding(14)
+                .backgroundColor('#EAF3F0')
+                .borderRadius(16)
+                .border({
+                  width: 1,
+                  color: '#CFE5DC'
+                });
+              }
+
+              if (this.isTomorrowFirstReady() && !this.shouldShowLowPointRestart() && !this.showTomorrowFirstForm) {
+                Column({ space: 8 }) {
+                  Text(this.tomorrowFirstTitle())
+                    .fontSize(13)
+                    .fontColor('#5F9E8A')
+                    .width('100%');
+
+                  Text(this.tomorrowFirst ? this.tomorrowFirst.text : '')
+                    .fontSize(17)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor('#1F2A2A')
+                    .width('100%')
+                    .maxLines(2)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis });
+
+                  Row({ space: 10 }) {
+                    Button('就做这件')
+                      .height(42)
+                      .layoutWeight(1)
+                      .fontSize(14)
+                      .fontColor('#FFFFFF')
+                      .backgroundColor('#5F9E8A')
+                      .borderRadius(14)
+                      .onClick(() => {
+                        this.onStartTomorrowFirst();
+                      });
+
+                    Button('换一件')
+                      .height(42)
+                      .fontSize(13)
+                      .fontColor('#7B8785')
+                      .backgroundColor('#F1F3F2')
+                      .borderRadius(14)
+                      .onClick(() => {
+                        this.onDismissTomorrowFirst();
+                      });
+                  }
+                  .width('100%');
+                }
+                .width('100%')
+                .padding(14)
+                .backgroundColor('#EAF3F0')
+                .borderRadius(16)
+                .border({
+                  width: 1,
+                  color: '#CFE5DC'
+                });
+              }
+
               if (this.shouldShowLowPointRestart()) {
                 Column({ space: 10 }) {
                   Text(this.lowPointRestartTitle())

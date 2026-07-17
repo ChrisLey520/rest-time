@@ -28,6 +28,7 @@ const checks = [
   ['node', ['test/focus_theme_core.test.mjs']],
   ['node', ['test/focus_effect_core.test.mjs']],
   ['node', ['test/pro_core.test.mjs']],
+  ['node', ['test/tomorrow_first_core.test.mjs']],
   ['node', ['test/task_core.test.mjs']],
   ['node', ['--check', 'scripts/check-deveco-env.mjs']],
   ['git', ['diff', '--check']]
