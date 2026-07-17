@@ -588,7 +588,7 @@ export struct SettingsPage {
             .alignItems(VerticalAlign.Center);
           }, (item: ThemeListItem) => `${item.theme.id}_${item.unlocked}_${item.selected}`);
 
-          Text('氛围只改变专注进行中的配色，完成后回到日常界面。')
+          Text('氛围覆盖整个计时会话：专注、歇息到完成选择；回到空闲恢复日常浅色。')
             .fontSize(11)
             .fontColor('#7B8785')
             .width('100%');

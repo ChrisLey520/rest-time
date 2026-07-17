@@ -138,7 +138,7 @@ export struct FocusPage {
 
   // 专注进行中把主题背景/卡片色发布给根 Tabs，让底部栏与整页同色。
   private publishThemeBar(): void {
-    if (this.isFocusRunning()) {
+    if (this.isThemeActive()) {
       AppStateService.setThemeBar(this.focusTheme.backgroundColor, this.focusTheme.cardColor);
     } else {
       AppStateService.clearThemeBar();
@@ -881,29 +881,39 @@ export struct FocusPage {
     return this.timerState.mode === 'focus' && this.timerState.status === 'running';
   }
 
-  // 专注进行中整页走主题配色；其余状态保持日常浅色。
+  // 主题生效范围：整个计时会话——专注运行/暂停、歇息、完成后的选择页。
+  // 只有回到日常空闲（idle+focus）才恢复浅色，保持一段会话内的沉浸连续。
+  private isThemeActive(): boolean {
+    if (this.timerState.status !== 'idle') {
+      return true;
+    }
+
+    return this.timerState.mode === 'break';
+  }
+
+  // 计时会话中整页走主题配色；其余状态保持日常浅色。
   private themeCardColor(): string {
-    return this.isFocusRunning() ? this.focusTheme.cardColor : '#FFFFFF';
+    return this.isThemeActive() ? this.focusTheme.cardColor : '#FFFFFF';
   }
 
   private themeCardBorderColor(): string {
-    return this.isFocusRunning() ? this.focusTheme.cardColor : '#DDE8EA';
+    return this.isThemeActive() ? this.focusTheme.cardColor : '#DDE8EA';
   }
 
   private themeInnerCardColor(): string {
-    return this.isFocusRunning() ? this.focusTheme.backgroundColor : '#F6F8F7';
+    return this.isThemeActive() ? this.focusTheme.backgroundColor : '#F6F8F7';
   }
 
   private themePrimaryTextColor(): string {
-    return this.isFocusRunning() ? this.focusTheme.timerColor : '#1F2A2A';
+    return this.isThemeActive() ? this.focusTheme.timerColor : '#1F2A2A';
   }
 
   private themeSecondaryTextColor(): string {
-    return this.isFocusRunning() ? this.focusTheme.accentColor : '#7B8785';
+    return this.isThemeActive() ? this.focusTheme.accentColor : '#7B8785';
   }
 
   private themeAccentColor(fallback: string): string {
-    return this.isFocusRunning() ? this.focusTheme.accentColor : fallback;
+    return this.isThemeActive() ? this.focusTheme.accentColor : fallback;
   }
 
   private isRecoveryGateStillRequired(): boolean {
@@ -1086,27 +1096,27 @@ export struct FocusPage {
             Text('栖时')
               .fontSize(28)
               .fontWeight(FontWeight.Bold)
-              .fontColor(this.isFocusRunning() ? this.focusTheme.timerColor : '#1F2A2A');
+              .fontColor(this.isThemeActive() ? this.focusTheme.timerColor : '#1F2A2A');
             Text('安放每一个专注时刻')
               .fontSize(14)
-              .fontColor(this.isFocusRunning() ? this.focusTheme.accentColor : '#7B8785');
+              .fontColor(this.isThemeActive() ? this.focusTheme.accentColor : '#7B8785');
             Text(`今日 ${Math.floor(this.todayStats.focusSeconds / 60)} 分钟 / ${this.todayStats.completedFocusCount} 次`)
               .fontSize(13)
-              .fontColor(this.isFocusRunning() ? this.focusTheme.accentColor : '#7B8785');
+              .fontColor(this.isThemeActive() ? this.focusTheme.accentColor : '#7B8785');
           }
           .alignItems(HorizontalAlign.Start)
           .layoutWeight(1);
 
           Text(this.statusText())
             .fontSize(13)
-            .fontColor(this.isFocusRunning() ? this.focusTheme.backgroundColor : '#5F9E8A')
+            .fontColor(this.isThemeActive() ? this.focusTheme.backgroundColor : '#5F9E8A')
             .padding({ left: 12, right: 12, top: 7, bottom: 7 })
-            .backgroundColor(this.isFocusRunning() ? this.focusTheme.accentColor : '#EAF3F0')
+            .backgroundColor(this.isThemeActive() ? this.focusTheme.accentColor : '#EAF3F0')
             .borderRadius(14);
         }
         .width('100%');
 
-        if (!this.isFocusRunning()) {
+        if (!this.isThemeActive()) {
           Column({ space: 14 }) {
             Row() {
               Column({ space: 5 }) {
@@ -1398,8 +1408,8 @@ export struct FocusPage {
 
           TimerDisplay({
             remainingSeconds: this.remainingSeconds,
-            timerColor: this.isFocusRunning() ? this.focusTheme.timerColor : '#1F2A2A',
-            glowColor: this.isFocusRunning() && this.focusTheme.timerGlowColor ? this.focusTheme.timerGlowColor : ''
+            timerColor: this.isThemeActive() ? this.focusTheme.timerColor : '#1F2A2A',
+            glowColor: this.isThemeActive() && this.focusTheme.timerGlowColor ? this.focusTheme.timerGlowColor : ''
           });
 
           if (this.timerState.status === 'idle' && this.timerState.mode === 'focus') {
@@ -1533,19 +1543,19 @@ export struct FocusPage {
               Text(this.focusCompletedTitle())
                 .fontSize(17)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1F2A2A')
+                .fontColor(this.themePrimaryTextColor())
                 .width('100%')
                 .textAlign(TextAlign.Center);
 
               Text(this.focusCompletedDescription())
                 .fontSize(14)
-                .fontColor('#7B8785')
+                .fontColor(this.themeSecondaryTextColor())
                 .width('100%')
                 .textAlign(TextAlign.Center);
 
               Text(`第 ${this.completedFocusRounds} 次 · 建议歇息 ${this.breakDescription()}`)
                 .fontSize(12)
-                .fontColor('#9AA6A3')
+                .fontColor(this.themeSecondaryTextColor())
                 .width('100%')
                 .textAlign(TextAlign.Center);
             }
@@ -1667,7 +1677,7 @@ export struct FocusPage {
                 Row()
                   .width('100%')
                   .height(7)
-                  .backgroundColor(this.isFocusRunning() ? this.focusTheme.cardColor : '#EAF3F0')
+                  .backgroundColor(this.isThemeActive() ? this.focusTheme.cardColor : '#EAF3F0')
                   .borderRadius(4);
 
                 Row()
@@ -1685,7 +1695,7 @@ export struct FocusPage {
                     .height(38)
                     .layoutWeight(1)
                     .fontSize(13)
-                    .fontColor(this.isFocusRunning() ? this.focusTheme.backgroundColor : '#FFFFFF')
+                    .fontColor(this.isThemeActive() ? this.focusTheme.backgroundColor : '#FFFFFF')
                     .backgroundColor(this.themeAccentColor('#5F9E8A'))
                     .borderRadius(12)
                     .onClick(() => {
@@ -1697,7 +1707,7 @@ export struct FocusPage {
                     .layoutWeight(1)
                     .fontSize(13)
                     .fontColor(this.themePrimaryTextColor())
-                    .backgroundColor(this.isFocusRunning() ? this.focusTheme.cardColor : '#DDE8EA')
+                    .backgroundColor(this.isThemeActive() ? this.focusTheme.cardColor : '#DDE8EA')
                     .borderRadius(12)
                     .onClick(() => {
                       this.onResetMicroAction();
@@ -1708,7 +1718,7 @@ export struct FocusPage {
                     .layoutWeight(1)
                     .fontSize(13)
                     .fontColor(this.themeAccentColor('#4D7EA8'))
-                    .backgroundColor(this.isFocusRunning() ? this.focusTheme.cardColor : '#EAF2F8')
+                    .backgroundColor(this.isThemeActive() ? this.focusTheme.cardColor : '#EAF2F8')
                     .borderRadius(12)
                     .onClick(() => {
                       this.onBlockedMicroAction();
@@ -1723,7 +1733,7 @@ export struct FocusPage {
             .borderRadius(16)
             .border({
               width: 1,
-              color: this.isFocusRunning() ? this.focusTheme.cardColor : '#DDE8EA'
+              color: this.isThemeActive() ? this.focusTheme.cardColor : '#DDE8EA'
             });
 
             if (this.isGuardCooling()) {
@@ -1866,7 +1876,7 @@ export struct FocusPage {
           color: this.themeCardBorderColor()
         });
 
-        if (!this.isFocusRunning()) {
+        if (!this.isThemeActive()) {
           SessionPreviewList({ sessions: this.recentSessions });
         }
       }
@@ -1875,6 +1885,6 @@ export struct FocusPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(this.isFocusRunning() ? this.focusTheme.backgroundColor : '#F6F8F7');
+    .backgroundColor(this.isThemeActive() ? this.focusTheme.backgroundColor : '#F6F8F7');
   }
 }
